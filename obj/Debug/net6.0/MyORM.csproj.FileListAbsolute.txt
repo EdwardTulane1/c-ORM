@@ -1,0 +1,14 @@
+/Users/nehara/Documents/Games/c#ORM/MyORM/obj/Debug/net6.0/MyORM.GeneratedMSBuildEditorConfig.editorconfig
+/Users/nehara/Documents/Games/c#ORM/MyORM/obj/Debug/net6.0/MyORM.AssemblyInfoInputs.cache
+/Users/nehara/Documents/Games/c#ORM/MyORM/obj/Debug/net6.0/MyORM.AssemblyInfo.cs
+/Users/nehara/Documents/Games/c#ORM/MyORM/obj/Debug/net6.0/MyORM.csproj.CoreCompileInputs.cache
+/Users/nehara/Documents/Games/c#ORM/MyORM/bin/Debug/net6.0/MyORM
+/Users/nehara/Documents/Games/c#ORM/MyORM/bin/Debug/net6.0/MyORM.deps.json
+/Users/nehara/Documents/Games/c#ORM/MyORM/bin/Debug/net6.0/MyORM.runtimeconfig.json
+/Users/nehara/Documents/Games/c#ORM/MyORM/bin/Debug/net6.0/MyORM.dll
+/Users/nehara/Documents/Games/c#ORM/MyORM/bin/Debug/net6.0/MyORM.pdb
+/Users/nehara/Documents/Games/c#ORM/MyORM/obj/Debug/net6.0/MyORM.dll
+/Users/nehara/Documents/Games/c#ORM/MyORM/obj/Debug/net6.0/refint/MyORM.dll
+/Users/nehara/Documents/Games/c#ORM/MyORM/obj/Debug/net6.0/MyORM.pdb
+/Users/nehara/Documents/Games/c#ORM/MyORM/obj/Debug/net6.0/MyORM.genruntimeconfig.cache
+/Users/nehara/Documents/Games/c#ORM/MyORM/obj/Debug/net6.0/ref/MyORM.dll
