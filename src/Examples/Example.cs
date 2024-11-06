@@ -8,7 +8,8 @@ namespace MyORM.Examples
     [Table("Customers")]
     public class Customer : Entity
     {
-        [Key]
+        [Key(isAutoIncrement: false)]
+        [Column("Id", false)]
         public int Id { get; set; }
 
         [Column("FirstName", false)]
@@ -21,7 +22,8 @@ namespace MyORM.Examples
     [Table("Orders")]
     public class Order : Entity
     {
-        [Key]
+        [Key(isAutoIncrement: false)]
+        [Column("Id", false)]
         public int Id { get; set; }
 
         [Column("OrderDate", false)]
@@ -37,13 +39,17 @@ namespace MyORM.Examples
     // Define context
     public class MyXmlContext : DbContext
     {
+        public static readonly string XmlStoragePath = Path.Combine(
+            Directory.GetCurrentDirectory(),
+            "XmlStorage"
+        );
+
         public DbSet<Customer> Customers { get; private set; }
         public DbSet<Order> Orders { get; private set; }
 
-        public MyXmlContext() : base(Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-            "XmlStorage"))
+        public MyXmlContext() : base(XmlStoragePath)
         {
+            Console.WriteLine($"XML files will be stored in: {XmlStoragePath}");
         }
     }
 
@@ -53,6 +59,7 @@ namespace MyORM.Examples
         {
             Console.WriteLine("XML ORM Example Application");
             Console.WriteLine("-------------------------");
+            Console.WriteLine($"Storage Path: {MyXmlContext.XmlStoragePath}");
 
             using (var context = new MyXmlContext())
             {
@@ -88,10 +95,10 @@ namespace MyORM.Examples
                 Console.WriteLine("Changes saved to XML files");
 
                 // Example 4: Removing an order
-                context.Orders.Remove(order);
-                Console.WriteLine($"Removed order: {order.Id}");
-                context.SaveChanges();
-                Console.WriteLine("Changes saved to XML files");
+                // context.Orders.Remove(order);
+                // Console.WriteLine($"Removed order: {order.Id}");
+                // context.SaveChanges();
+                // Console.WriteLine("Changes saved to XML files");
 
                 // Example 5: Query (Note: Basic in-memory query)
                 var customers = context.Customers.AsQueryable()

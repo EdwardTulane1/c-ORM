@@ -12,3 +12,4 @@
 /Users/nehara/Documents/Games/c#ORM/MyORM/obj/Debug/net8.0/MyORM.pdb
 /Users/nehara/Documents/Games/c#ORM/MyORM/obj/Debug/net8.0/MyORM.genruntimeconfig.cache
 /Users/nehara/Documents/Games/c#ORM/MyORM/obj/Debug/net8.0/ref/MyORM.dll
+/Users/nehara/Documents/Games/c#ORM/MyORM/obj/Debug/net8.0/MyORM.sourcelink.json
