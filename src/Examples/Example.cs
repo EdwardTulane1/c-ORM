@@ -32,7 +32,7 @@ namespace MyORM.Examples
         [Column("CustomerId", false)]
         public int CustomerId { get; set; }
 
-        [Relationship(RelationType.ManyToOne, typeof(Customer))]
+        [Relationship(RelationType.ManyToOne, typeof(Customer), "CustomerId")]
         public virtual Customer Customer { get; set; }
     }
 

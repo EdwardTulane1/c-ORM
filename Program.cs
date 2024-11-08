@@ -6,7 +6,7 @@ namespace MyORM
     {
         static void Main(string[] args)
         {
-            var example = new XmlOrmExample();
+            var example = new XmlOrmExampleWithRelations();
             example.RunExample();
 
             Console.WriteLine("\nPress any key to exit...");

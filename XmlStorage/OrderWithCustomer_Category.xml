@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Relationships>
+  <Relationship>
+    <ParentKey>1</ParentKey>
+    <RelatedKey>1</RelatedKey>
+    <ParentType>OrderWithCustomer</ParentType>
+    <RelatedType>Category</RelatedType>
+  </Relationship>
+  <Relationship>
+    <ParentKey>1</ParentKey>
+    <RelatedKey>2</RelatedKey>
+    <ParentType>OrderWithCustomer</ParentType>
+    <RelatedType>Category</RelatedType>
+  </Relationship>
+  <Relationship>
+    <ParentKey>2</ParentKey>
+    <RelatedKey>2</RelatedKey>
+    <ParentType>OrderWithCustomer</ParentType>
+    <RelatedType>Category</RelatedType>
+  </Relationship>
+</Relationships>
