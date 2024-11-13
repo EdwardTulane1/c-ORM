@@ -149,24 +149,6 @@ namespace MyORM.Examples
                 Console.WriteLine($"Modified customer last name to: {johnCustomer.LastName}");
                 context.SaveChanges();
                 Console.WriteLine("Changes saved to XML files");
-                
-
-                // Example 4: Removing an order
-                // context.Orders.Remove(order);
-                // Console.WriteLine($"Removed order: {order.Id}");
-                // context.SaveChanges();
-                // Console.WriteLine("Changes saved to XML files");
-
-                // Example 5: Query (Note: Basic in-memory query)
-                // var customers = context.Customers.AsQueryable()
-                //     .Where(c => c.LastName == "Smith")
-                //     .ToList();
-                
-                // Console.WriteLine("\nQuerying customers with last name 'Smith':");
-                // foreach (var c in customers)
-                // {
-                //     Console.WriteLine($"Found customer: {c.FirstName} {c.LastName}");
-                // }
             }
 
             Console.WriteLine("\nPress any key to exit...");

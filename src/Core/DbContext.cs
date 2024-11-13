@@ -30,6 +30,7 @@ namespace MyORM.Core
 
             foreach (var property in dbSetProperties)
             {
+                // Create DbSet instance for each that needs to be initialized
                 var entityType = property.PropertyType.GetGenericArguments()[0];
                 var dbSetType = typeof(DbSet<>).MakeGenericType(entityType);
                 var dbSet = Activator.CreateInstance(dbSetType, new object[] { this });

@@ -1,8 +1,5 @@
-using System;
-using System.Collections.Generic;
+
 using System.Xml.Linq;
-using System.IO;
-using System.Linq;
 using System.Reflection;
 using MyORM.Attributes;
 
@@ -17,8 +14,6 @@ namespace MyORM.Core
         {
             _basePath = basePath;
             _documents = new Dictionary<string, XDocument>();
-            
-            Console.WriteLine($"Ensuring directory exists: {basePath}");
             Directory.CreateDirectory(basePath);
         }
 
@@ -47,6 +42,7 @@ namespace MyORM.Core
                 Console.WriteLine($"  Column Attribute: {columnAttr?.ColumnName ?? "none"}");
                 Console.WriteLine($"  Key Attribute: {(keyAttr != null ? "yes" : "no")}");
                 
+                // The xml file contains only the properties with Column or Key attributes
                 if (columnAttr != null || keyAttr != null)
                 {
                     entityElement.Add(new XElement(prop.Name, value?.ToString() ?? ""));
@@ -60,7 +56,7 @@ namespace MyORM.Core
             var keyProp = actualType.GetProperties()
                 .FirstOrDefault(p => p.GetCustomAttribute<KeyAttribute>() != null);
 
-            if (keyProp != null)
+            if (keyProp != null && entity.IsModified)
             {
                 var keyValue = keyProp.GetValue(entity)?.ToString();
                 var existingEntity = root.Elements("Entity")
@@ -131,22 +127,24 @@ namespace MyORM.Core
 
 
 
-// RELATIONSHIP HANDLING
+// RELATIONSHIP HANDLING. Entity is the class. EntityElement is the XML element building.
         private void HandleRelationshipProperties<T>(T entity, XElement entityElement) where T : Entity
         {
             var entityType = entity.GetType();
             var relationshipProps = entityType.GetProperties()
                 .Where(p => p.GetCustomAttribute<RelationshipAttribute>() != null);
 
+            // all the elements that have a relationship attribute
             foreach (var prop in relationshipProps)
             {
+                // get the relationship attribute of each of them
                 var relAttr = prop.GetCustomAttribute<RelationshipAttribute>();
                 Console.WriteLine($"Handling relationship: {prop.Name} {relAttr.Type}, From: {relAttr.FromProperty} To: {relAttr.ToProperty}");
                 
                 switch (relAttr?.Type)
                 {
                     case RelationType.ManyToMany:
-                        // get the related objects 
+                        // get the related objects  (the collection dbSet)
                         var collection = prop.GetValue(entity) as IEnumerable<Entity>;
                         if (collection != null && collection.Any())
                         {
@@ -169,6 +167,7 @@ namespace MyORM.Core
                         break;
 
                     case RelationType.OneToMany:
+                        // In this case, the related entities are stored in the related entity
                         break;
                 }
             }
@@ -178,6 +177,7 @@ namespace MyORM.Core
         {
             try
             {
+                // The mapping is always to the key in the related entity
                 var parentType = parentEntity.GetType();
                 Console.WriteLine($"Saving many-to-many relationships for {parentType.Name}");
                 
