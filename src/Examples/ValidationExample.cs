@@ -1,8 +1,6 @@
 using MyORM.Attributes;
 using MyORM.Attributes.Validation;
 using MyORM.Core;
-// using System.Collections.Generic;
-// using System.ComponentModel.DataAnnotations;
 
 namespace MyORM.Examples
 {
@@ -14,99 +12,75 @@ namespace MyORM.Examples
         public int Id { get; set; }
 
         [Required]
-        [StringLength(2, 20)]
+        [StringLength(20, 2)]
         [Column("Username", false)]
-        public string Username { get; set; }
+        public virtual string Username { get; set; }
 
         [Required]
         [Email]
         [Column("Email", false)]
-        public string Email { get; set; }
+        public virtual string Email { get; set; }
 
         [Required]
-        [StringLength(20, 50)]
+        [StringLength(50, 1)]
         [RegularExpression(@"^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$")] // At least 8 characters, 1 letter and 1 number
         [Column("Password", false)]
-        public string Password { get; set; }
+        public virtual string Password { get; set; }
 
-        [Range(13, 120)]
+        [Range(2, 120)]
         [Column("Age", false)]
-        public int Age { get; set; }
+        public virtual int Age { get; set; }
     }
+
+    public class myExm : DbContext
+    {
+        public static readonly string XmlStoragePath = Path.Combine(
+            Directory.GetCurrentDirectory(),
+            "XmlStorage"
+        );
+
+        public DbSet<User> Users { get; set; }
+
+        public myExm() : base(XmlStoragePath)
+        {
+            Console.WriteLine($"XML files will be stored in: {XmlStoragePath}");
+        }
+    }
+
 
     public class ValidationExample
     {
         public void RunExample()
         {
-            var user = new User
-            {
-                Username = "j", // Too short
-                Email = "invalid-email", // Invalid email format
-                Password = "weak", // Too short and doesn't meet regex
-                Age = 10 // Below minimum
-            };
+            Console.WriteLine("Running Validation Example...\n");
 
-            var validationResults = ValidateEntity(user);
-            PrintValidationResults(validationResults);
+            // Create context
+            var context = new myExm();
 
-            // Fix the validation errors
-            user.Username = "john_doe";
-            user.Email = "john@example.com";
-            user.Password = "SecurePass123";
-            user.Age = 25;
 
-            validationResults = ValidateEntity(user);
-            PrintValidationResults(validationResults);
-        }
+            // Create a new user
+            var user = new User();
 
-        private List<ValidationResult> ValidateEntity<T>(T entity) where T : Entity
-        {
-            var results = new List<ValidationResult>();
-            var properties = typeof(T).GetProperties();
 
-            foreach (var property in properties)
-            {
-                var value = property.GetValue(entity);
-                var validationAttributes = property.GetCustomAttributes(typeof(ValidationAttribute), true) as ValidationAttribute[];
+            // Create a new user through the DbSet to get a proxied instance
 
-                if (validationAttributes != null)
-                {
-                    foreach (var attribute in validationAttributes)
-                    {
-                        var result = attribute.Validate(value, property.Name);
-                        if (!result.IsValid)
-                        {
-                            results.Add(result);
-                        }
-                    }
-                }
-            }
+            Console.WriteLine("Setting invalid values:");
+            // These should trigger validation errors
+            user.Username = "jhon"; // Too short
+            user.Email = "invalidemail@zzz"; // Invalid email format
+            user.Password = "Password123"; // Too short and doesn't meet regex
+            user.Age = 10; // Below minimum
 
-            return results;
-        }
+            Console.WriteLine("\nSetting valid values:");
+            // Now set valid values
+            // user.Username = "john_doe";
+            // user.Email = "john@example.com";
+            // user.Password = "SecurePass123";
+            // user.Age = 25;
 
-        private void PrintValidationResults(List<ValidationResult> results)
-        {
-            if (results.Count == 0)
-            {
-                Console.WriteLine("✅ Validation passed! No errors found.");
-                return;
-            }
-
-            Console.WriteLine("❌ Validation failed! Found the following errors:");
-            foreach (var result in results)
-            {
-                var errorIcon = result.ErrorLevel switch
-                {
-                    ValidationErrorLevel.Warning => "⚠️",
-                    ValidationErrorLevel.Error => "❌",
-                    ValidationErrorLevel.Critical => "🚫",
-                    _ => "❓"
-                };
-
-                Console.WriteLine($"{errorIcon} {result.PropertyName}: {result.Message} ({result.ErrorLevel})");
-            }
-            Console.WriteLine();
+            // Add to context
+            context.Users.Add(user);
+            context.SaveChanges();
         }
     }
-} 
+}

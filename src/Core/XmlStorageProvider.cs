@@ -2,6 +2,7 @@
 using System.Xml.Linq;
 using System.Reflection;
 using MyORM.Attributes;
+using MyORM.Attributes.Validation;
 
 namespace MyORM.Core
 {
@@ -29,6 +30,7 @@ namespace MyORM.Core
             
             // Debug all properties - Get properties from the actual type, not just Entity
             var actualType = entity.GetType();  // This gets the real type (Customer or Order)
+            ValidationHelper.ValidateEntity(entity);
             Console.WriteLine($"\nDebug info for {actualType.Name}:");
             
             foreach (var prop in actualType.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))

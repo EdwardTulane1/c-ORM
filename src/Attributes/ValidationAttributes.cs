@@ -1,4 +1,7 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 
 namespace MyORM.Attributes.Validation
 {
@@ -177,6 +180,101 @@ namespace MyORM.Attributes.Validation
             return ValidationFunction(value);
         }
     }
+
+    public class ValidationException : Exception
+    {
+        public List<ValidationResult> ValidationResults { get; }
+
+        public ValidationException(List<ValidationResult> results) 
+            : base(FormatValidationMessage(results))
+        {
+            ValidationResults = results;
+        }
+
+        private static string FormatValidationMessage(List<ValidationResult> results)
+        {
+            var errorMessages = results
+                .Select(r => $"{r.PropertyName}: {r.Message} ({r.ErrorLevel})")
+                .ToList();
+            
+            return $"Validation failed with {results.Count} errors:\n" + 
+                   string.Join("\n", errorMessages);
+        }
+    }
+
+    public static class ValidationHelper
+    {
+        public static void ValidateEntity(object entity)
+        {
+            Console.WriteLine($"Validating entity of type {entity.GetType().Name}");
+            var results = new List<ValidationResult>();
+            var properties = entity.GetType().GetProperties();
+
+            // If propertyName is specified, only validate that property
+            foreach (var property in properties)
+            {
+                var value = property.GetValue(entity);
+                var validationAttributes = property.GetCustomAttributes(typeof(ValidationAttribute), true) as ValidationAttribute[];
+
+                if (validationAttributes != null)
+                {
+                    foreach (var attribute in validationAttributes)
+                    {
+                        var result = attribute.Validate(value, property.Name);
+                        if (!result.IsValid)
+                        {
+                            results.Add(result);
+                        }
+                    }
+                }
+            }
+
+            // If there are any errors (not warnings), throw exception
+            var errors = results.Where(r => r.ErrorLevel >= ValidationErrorLevel.Error).ToList();
+            if (errors.Any())
+            {
+                LogValidationErrors(errors);
+                throw new ValidationException(errors);
+            }
+        }
+
+        private static void ValidateProperty(object entity, PropertyInfo property, List<ValidationResult> results)
+        {
+            var value = property.GetValue(entity);
+            var validationAttributes = property
+                .GetCustomAttributes<ValidationAttribute>(true)
+                .ToArray();
+
+            foreach (var attribute in validationAttributes)
+            {
+                var result = attribute.Validate(value, property.Name);
+                if (!result.IsValid)
+                {
+                    results.Add(result);
+                }
+            }
+        }
+
+        private static void LogValidationErrors(List<ValidationResult> errors)
+        {
+            Console.WriteLine("❌ Validation failed! Found the following errors:");
+            foreach (var error in errors)
+            {
+                var errorIcon = error.ErrorLevel switch
+                {
+                    ValidationErrorLevel.Warning => "⚠️",
+                    ValidationErrorLevel.Error => "❌",
+                    ValidationErrorLevel.Critical => "🚫",
+                    _ => "❓"
+                };
+
+                Console.WriteLine($"{errorIcon} {error.PropertyName}: {error.Message} ({error.ErrorLevel})");
+            }
+            Console.WriteLine();
+        }
+    }
 } 
 
 
+
+            // Otherwise validate all properties
