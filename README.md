@@ -27,3 +27,5 @@ TODO:
 Make it possible to get an element (With all its related entites)
 Validations
 
+
+It doesn't know its modified based id... 

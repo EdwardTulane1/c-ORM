@@ -73,15 +73,16 @@ namespace MyORM.Core
 
                 foreach (var entity in entities)
                 {
-                    if (entity.IsNew || entity.IsModified)
+                    
+                    if (entity.IsDeleted)
+                    {
+                        _storageProvider.DeleteEntity(entity, tableName);
+                    }
+                    else 
                     {
                         _storageProvider.SaveEntity(entity, tableName);
                         entity.IsNew = false;
                         entity.IsModified = false;
-                    }
-                    else if (entity.IsDeleted)
-                    {
-                        _storageProvider.DeleteEntity(entity, tableName);
                     }
                 }
             }

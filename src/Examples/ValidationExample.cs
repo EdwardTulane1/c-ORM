@@ -81,6 +81,9 @@ namespace MyORM.Examples
             // Add to context
             context.Users.Add(user);
             context.SaveChanges();
+
+            user.Age = 30;  
+            context.SaveChanges();
         }
     }
 }

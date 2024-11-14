@@ -58,7 +58,7 @@ namespace MyORM.Core
             var keyProp = actualType.GetProperties()
                 .FirstOrDefault(p => p.GetCustomAttribute<KeyAttribute>() != null);
 
-            if (keyProp != null && entity.IsModified)
+            if (keyProp != null)
             {
                 var keyValue = keyProp.GetValue(entity)?.ToString();
                 var existingEntity = root.Elements("Entity")
