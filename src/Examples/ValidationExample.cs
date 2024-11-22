@@ -1,5 +1,6 @@
 using MyORM.Attributes;
 using MyORM.Attributes.Validation;
+using System.Runtime.CompilerServices; 
 using MyORM.Core;
 
 namespace MyORM.Examples
@@ -9,7 +10,7 @@ namespace MyORM.Examples
     {
         [Key]
         [Column("Id", false)]
-        public int Id { get; set; }
+        public int Id { get; set;}
 
         [Required]
         [StringLength(20, 2)]
@@ -19,7 +20,7 @@ namespace MyORM.Examples
         [Required]
         [Email]
         [Column("Email", false)]
-        public virtual string Email { get; set; }
+        public virtual string Email { get; set  ;}
 
         [Required]
         [StringLength(50, 1)]
@@ -66,7 +67,7 @@ namespace MyORM.Examples
 
             Console.WriteLine("Setting invalid values:");
             // These should trigger validation errors
-            user.Username = "jhon"; // Too short
+            user.Username = "jh"; // Too short
             user.Email = "invalidemail@zzz"; // Invalid email format
             user.Password = "Password123"; // Too short and doesn't meet regex
             user.Age = 10; // Below minimum
@@ -81,6 +82,8 @@ namespace MyORM.Examples
             // Add to context
             context.Users.Add(user);
             context.SaveChanges();
+
+            user.Username = "john_doe";
 
             user.Age = 30;  
             context.SaveChanges();

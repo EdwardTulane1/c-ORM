@@ -5,6 +5,7 @@ using System.Data.SqlClient;
 using System.Linq;
 using System.Reflection;
 using MyORM.Attributes;
+using MyORM.Attributes.Validation;
 
 namespace MyORM.Core
 {
@@ -78,11 +79,12 @@ namespace MyORM.Core
                     {
                         _storageProvider.DeleteEntity(entity, tableName);
                     }
-                    else 
-                    {
-                        _storageProvider.SaveEntity(entity, tableName);
+                    else if (entity.HasChanges()){
+                        ValidationHelper.ValidateEntity(entity);
+                         _storageProvider.SaveEntity(entity, tableName);
                         entity.IsNew = false;
                         entity.IsModified = false;
+                        entity.TakeSnapshot();
                     }
                 }
             }

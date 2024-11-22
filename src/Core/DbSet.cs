@@ -20,6 +20,8 @@ namespace MyORM.Core
         public void Add(T entity)
         {
             _entities.Add(entity);
+            entity.IsNew = true;
+            entity.TakeSnapshot();  
         }
 
         public void Remove(T entity)

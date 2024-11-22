@@ -29,3 +29,9 @@ Validations
 
 
 It doesn't know its modified based id... 
+
+A strategic decision - to have event on modify or to live with @saveChanges
+https://sampathdissanyake.medium.com/racking-data-changes-in-c-net-c2be9ed333fd
+
+
+The options to better flow included using setPropert/OnPropertyChangedy on the user side itself, which I tried to avoid in order to make the system more user friendly. It means we don;t track changes in entities

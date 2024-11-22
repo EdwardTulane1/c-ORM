@@ -1,4 +1,3 @@
-
 using System.Xml.Linq;
 using System.Reflection;
 using MyORM.Attributes;
@@ -58,7 +57,7 @@ namespace MyORM.Core
             var keyProp = actualType.GetProperties()
                 .FirstOrDefault(p => p.GetCustomAttribute<KeyAttribute>() != null);
 
-            if (keyProp != null)
+            if (keyProp != null) // is the entity new or changed?
             {
                 var keyValue = keyProp.GetValue(entity)?.ToString();
                 var existingEntity = root.Elements("Entity")
@@ -88,12 +87,18 @@ namespace MyORM.Core
             var doc = GetOrCreateDocument(tableName, xmlPath);
             var root = doc.Root;
 
-            var keyProp = typeof(T).GetProperties()
+            var entityType = entity.GetType();
+            var keyProp = entityType.GetProperties()
                 .FirstOrDefault(p => p.GetCustomAttribute<KeyAttribute>() != null);
             
             if (keyProp != null)
             {
                 var keyValue = keyProp.GetValue(entity)?.ToString();
+                
+                // Handle relationships before deleting the entity
+                HandleEntityDeletion(entity, keyValue);
+
+                // Delete the entity itself
                 var elementToRemove = root.Elements("Entity")
                     .FirstOrDefault(e => e.Element(keyProp.Name)?.Value == keyValue);
                 
@@ -256,6 +261,113 @@ namespace MyORM.Core
                 Console.WriteLine($"Error saving many-to-many relationships: {ex.Message}");
                 Console.WriteLine(ex.StackTrace);
             }
+        }
+
+        private void HandleEntityDeletion<T>(T entity, string entityKeyValue) where T : Entity
+        {
+            var entityType = entity.GetType();
+            var relationshipProps = entityType.GetProperties()
+                .Where(p => p.GetCustomAttribute<RelationshipAttribute>() != null);
+
+            foreach (var prop in relationshipProps)
+            {
+                var relAttr = prop.GetCustomAttribute<RelationshipAttribute>();
+                Console.WriteLine($"Handling deletion of relationship: {prop.Name} {relAttr.Type}");
+
+                switch (relAttr?.Type)
+                {
+                    case RelationType.ManyToMany:
+                        // Delete all relationship mappings for this entity
+                        DeleteManyToManyRelationships(entityType, relAttr.RelatedType, entityKeyValue);
+                        break;
+
+                    case RelationType.OneToMany:
+                        // Find and update or delete related entities
+                        HandleOneToManyDeletion(entity, relAttr, entityKeyValue);
+                        break;
+
+                    case RelationType.ManyToOne:
+                    case RelationType.OneToOne:
+                        // Nothing special needed for these cases as the foreign key will be deleted with the entity
+                        break;
+                }
+            }
+        }
+
+        private void DeleteManyToManyRelationships(Type parentType, Type relatedType, string parentKeyValue)
+        {
+            var mappingFileName = $"{parentType.Name}_{relatedType.Name}.xml";
+            var filePath = Path.Combine(_basePath, mappingFileName);
+
+            if (!File.Exists(filePath)) return;
+
+            var doc = XDocument.Load(filePath);
+            var rootElement = doc.Root;
+
+            // Remove all relationships where this entity is the parent
+            var relationshipsToRemove = rootElement.Elements("Relationship")
+                .Where(e => e.Element("ParentKey")?.Value == parentKeyValue)
+                .ToList();
+
+            foreach (var rel in relationshipsToRemove)
+            {
+                rel.Remove();
+            }
+
+            // Also remove relationships where this entity is the related entity
+            relationshipsToRemove = rootElement.Elements("Relationship")
+                .Where(e => e.Element("RelatedKey")?.Value == parentKeyValue)
+                .ToList();
+
+            foreach (var rel in relationshipsToRemove)
+            {
+                rel.Remove();
+            }
+
+            doc.Save(filePath);
+        }
+
+        private void HandleOneToManyDeletion<T>(T entity, RelationshipAttribute relAttr, string parentKeyValue) where T : Entity
+        {
+            // Get the XML file for the related entities
+            var relatedTableName = relAttr.RelatedType.Name;
+            var relatedXmlPath = Path.Combine(_basePath, $"{relatedTableName}.xml");
+            
+            if (!File.Exists(relatedXmlPath)) return;
+
+            var doc = XDocument.Load(relatedXmlPath);
+            var root = doc.Root;
+
+            // Find all related entities that reference this entity
+            var relatedEntities = root.Elements("Entity")
+                .Where(e => e.Element($"{relAttr.ToProperty}_key")?.Value == parentKeyValue)
+                .ToList();
+
+            // Remove or update the related entities based on your business logic
+            foreach (var relatedEntity in relatedEntities)
+            {
+                // Option 1: Delete the related entities
+                relatedEntity.Remove();
+                
+                //Option 2: Set the foreign key to null/default
+                var foreignKeyElement = relatedEntity.Element($"{relAttr.ToProperty}_key");
+                // check if the foreign key property is required
+                var foreignKeyProp = relatedEntity.GetType().GetProperties()
+                    .FirstOrDefault(p => p.Name == relAttr.ToProperty);
+                // check if the foreign key property is required
+                
+                if (foreignKeyProp != null && foreignKeyProp.GetCustomAttribute<RequiredAttribute>() != null)
+                {
+                    // delete the entity
+                    relatedEntity.Remove();
+                }
+                else{
+                    // set the foreign key to null/default
+                    foreignKeyElement.Value = null;
+                }
+            }
+
+            doc.Save(relatedXmlPath);
         }
     }
 }
