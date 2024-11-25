@@ -35,3 +35,18 @@ https://sampathdissanyake.medium.com/racking-data-changes-in-c-net-c2be9ed333fd
 
 
 The options to better flow included using setPropert/OnPropertyChangedy on the user side itself, which I tried to avoid in order to make the system more user friendly. It means we don;t track changes in entities
+
+
+
+
+in savechanges related entity's might be changes while their related still don't know about it.
+
+SO - a change doesnt matter. we only mapping unchangeable keys
+only thing that matters deleting
+when a entity is mapped to a already deleted one - we need to know about it and react to it.
+
+options - many to many - covered by checking no IsDeleted flag on the related entities
+many to one
+one to one
+one to many
+

@@ -1,0 +1,10 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Entities>
+  <Entity>
+    <Id>0</Id>
+    <Username>john_doe</Username>
+    <Email>invalidemail@zzz</Email>
+    <Password>Password123</Password>
+    <Age>30</Age>
+  </Entity>
+</Entities>

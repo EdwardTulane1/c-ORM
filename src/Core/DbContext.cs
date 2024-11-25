@@ -1,8 +1,10 @@
-using System;
-using System.Collections.Generic;
+/*
+ * DbContext serves as the main entry point for interacting with the database/storage.
+ * It manages entity sets (tables), tracks changes, and handles saving data to storage.
+ * This implementation specifically works with XML storage but follows common ORM patterns.
+ */
+
 using System.Data;
-using System.Data.SqlClient;
-using System.Linq;
 using System.Reflection;
 using MyORM.Attributes;
 using MyORM.Attributes.Validation;
@@ -15,6 +17,11 @@ namespace MyORM.Core
         private readonly XmlStorageProvider _storageProvider;
         protected Dictionary<Type, string> TableMappings { get; } = new Dictionary<Type, string>();
 
+        /*
+         * Constructor initializes the context with the XML storage path
+         * Sets up the storage provider and initializes all DbSet properties
+         * @param xmlBasePath: Base path where XML files will be stored
+         */
         protected DbContext(string xmlBasePath)
         {
             _xmlBasePath = xmlBasePath;
@@ -23,6 +30,11 @@ namespace MyORM.Core
             MapEntities();
         }
 
+        /*
+         * Initializes all DbSet properties in the context
+         * Uses reflection to find properties of type DbSet<T>
+         * Creates instances of DbSets for each entity type
+         */
         private void InitializeDbSets()
         {
             var dbSetProperties = GetType().GetProperties()
@@ -31,7 +43,6 @@ namespace MyORM.Core
 
             foreach (var property in dbSetProperties)
             {
-                // Create DbSet instance for each that needs to be initialized
                 var entityType = property.PropertyType.GetGenericArguments()[0];
                 var dbSetType = typeof(DbSet<>).MakeGenericType(entityType);
                 var dbSet = Activator.CreateInstance(dbSetType, new object[] { this });
@@ -39,6 +50,11 @@ namespace MyORM.Core
             }
         }
 
+        /*
+         * Maps entity types to their table names using attributes
+         * Reads TableAttribute from entity classes to determine table names
+         * Stores mappings in TableMappings dictionary
+         */
         private void MapEntities()
         {
             var entityTypes = GetType().GetProperties()
@@ -56,43 +72,87 @@ namespace MyORM.Core
             }
         }
 
+        /*
+         * Saves all pending changes to storage
+         * Processes all modified, new, and deleted entities
+         * Validates entities before saving
+         * Updates entity states after successful save
+         */
         public void SaveChanges()
         {
-            foreach (var mapping in TableMappings)
+            var graph = BuildDependencyGraph();
+            var sortedEntityTypes = graph.GetSortedEntities();
+
+            // First handle deletions in reverse order
+            foreach (var entityType in sortedEntityTypes.AsEnumerable().Reverse())
             {
-                var entityType = mapping.Key;
-                var tableName = mapping.Value;
+
                 var dbSetProperty = GetType().GetProperties()
                     .First(p => p.PropertyType == typeof(DbSet<>).MakeGenericType(entityType));
                 var dbSet = dbSetProperty.GetValue(this);
-
-                var entities = ((IEnumerable<Entity>)dbSet
-                    .GetType()
-                    .GetField("_entities", BindingFlags.NonPublic | BindingFlags.Instance)
-                    .GetValue(dbSet))
-                    .ToList();
+                var entities = ((IEnumerable<Entity>)dbSet.GetType()
+                    .GetProperty("Entities")?.GetValue(dbSet)).ToList();
 
                 foreach (var entity in entities)
                 {
-                    
                     if (entity.IsDeleted)
                     {
-                        _storageProvider.DeleteEntity(entity, tableName);
+                        _storageProvider.DeleteEntity(entity, entityType.Name);
                     }
-                    else if (entity.HasChanges()){
+                    else
+                    {
                         ValidationHelper.ValidateEntity(entity);
-                         _storageProvider.SaveEntity(entity, tableName);
+                        _storageProvider.SaveEntity(entity, entityType.Name);
                         entity.IsNew = false;
                         entity.IsModified = false;
                         entity.TakeSnapshot();
                     }
                 }
+            }    
+        }
+
+        private DependencyGraph BuildDependencyGraph()
+        {
+            var graph = new DependencyGraph();
+
+            foreach (var dbSetProperty in GetType().GetProperties()
+                .Where(p => p.PropertyType.IsGenericType &&
+                            p.PropertyType.GetGenericTypeDefinition() == typeof(DbSet<>)))
+            {
+                var entityType = dbSetProperty.PropertyType.GetGenericArguments()[0];
+                graph.AddNode(entityType);
+
+                // Add dependencies based on relationships
+                var relationshipProps = entityType.GetProperties()
+                    .Where(p => p.GetCustomAttribute<RelationshipAttribute>() != null);
+
+                foreach (var prop in relationshipProps)
+                {
+                    var relAttr = prop.GetCustomAttribute<RelationshipAttribute>();
+                    if(relAttr == null) continue;
+                    switch (relAttr.Type)
+                    {
+                        case RelationType.ManyToOne:
+                        case RelationType.OneToOne:
+                            // Add dependency from current entity to related entity
+                            graph.AddDependency(entityType, relAttr.RelatedType);
+                            break;
+                        case RelationType.OneToMany:
+                            // Add dependency from related entity to current entity
+                            graph.AddDependency(relAttr.RelatedType, entityType);
+                            break;
+                        case RelationType.ManyToMany:
+                            // For many-to-many, we don't add direct dependencies
+                            break;
+                    }
+                }
             }
+            return graph;
         }
 
         public void Dispose()
         {
-            // Cleanup if needed
+            // TODO: ... 
         }
     }
 }

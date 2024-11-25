@@ -43,7 +43,7 @@ namespace MyORM.Attributes.Validation
     [AttributeUsage(AttributeTargets.Property, AllowMultiple = true)]
     public abstract class ValidationAttribute : Attribute
     {
-        public string ErrorMessage { get; set; }
+        public string? ErrorMessage { get; set; }
         public ValidationErrorLevel ErrorLevel { get; set; } = ValidationErrorLevel.Error;
         public ValidationRuleType RuleType { get; protected set; }
         
@@ -62,7 +62,7 @@ namespace MyORM.Attributes.Validation
         {
             if (value == null || (value is string str && string.IsNullOrWhiteSpace(str)))
             {
-                return new ValidationResult(false, ErrorMessage, propertyName, ErrorLevel);
+                return new ValidationResult(false, ErrorMessage!, propertyName, ErrorLevel);
             }
             return ValidationResult.Success;
         }
@@ -88,7 +88,7 @@ namespace MyORM.Attributes.Validation
             var str = value as string;
             if (str != null && (str.Length < MinLength || str.Length > MaxLength))
             {
-                return new ValidationResult(false, ErrorMessage, propertyName, ErrorLevel);
+                return new ValidationResult(false, ErrorMessage!, propertyName, ErrorLevel);
             }
             return ValidationResult.Success;
         }
@@ -114,7 +114,7 @@ namespace MyORM.Attributes.Validation
             var number = value as int?;
             if (number != null && (number < MinValue || number > MaxValue))
             {
-                return new ValidationResult(false, ErrorMessage, propertyName, ErrorLevel);
+                return new ValidationResult(false, ErrorMessage!, propertyName, ErrorLevel);
             }
             return ValidationResult.Success;
         }
@@ -135,7 +135,7 @@ namespace MyORM.Attributes.Validation
             var str = value as string;
             if (str != null && !str.Contains("@"))
             {
-                return new ValidationResult(false, ErrorMessage, propertyName, ErrorLevel);
+                return new ValidationResult(false, ErrorMessage!, propertyName, ErrorLevel);
             }
             return ValidationResult.Success;
         }
@@ -159,7 +159,7 @@ namespace MyORM.Attributes.Validation
             var str = value as string;
             if (str != null && !System.Text.RegularExpressions.Regex.IsMatch(str, Pattern))
             {
-                return new ValidationResult(false, ErrorMessage, propertyName, ErrorLevel);
+                return new ValidationResult(false, ErrorMessage!, propertyName, ErrorLevel);
             }
             return ValidationResult.Success;
         }
@@ -213,10 +213,10 @@ namespace MyORM.Attributes.Validation
             // If propertyName is specified, only validate that property
             foreach (var property in properties)
             {
-                var value = property.GetValue(entity);
+                var value = property.GetValue(entity)!;
                 var validationAttributes = property.GetCustomAttributes(typeof(ValidationAttribute), true) as ValidationAttribute[];
 
-                if (validationAttributes != null)
+                if (validationAttributes != null )
                 {
                     foreach (var attribute in validationAttributes)
                     {
@@ -238,22 +238,6 @@ namespace MyORM.Attributes.Validation
             }
         }
 
-        private static void ValidateProperty(object entity, PropertyInfo property, List<ValidationResult> results)
-        {
-            var value = property.GetValue(entity);
-            var validationAttributes = property
-                .GetCustomAttributes<ValidationAttribute>(true)
-                .ToArray();
-
-            foreach (var attribute in validationAttributes)
-            {
-                var result = attribute.Validate(value, property.Name);
-                if (!result.IsValid)
-                {
-                    results.Add(result);
-                }
-            }
-        }
 
         private static void LogValidationErrors(List<ValidationResult> errors)
         {

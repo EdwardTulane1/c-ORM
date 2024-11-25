@@ -20,7 +20,7 @@ namespace MyORM.Examples
         [Column("LastName", false)]
         public string LastName { get; set; }
 
-        [Relationship(RelationType.OneToMany, typeof(OrderWithCustomer), fromProperty: "Id", toProperty: "CustomerId")]
+        [Relationship(RelationType.OneToMany, typeof(OrderWithCustomer), fromProperty: "Id", toProperty: "CustomerId", onDelete: DeleteBehavior.SetNull)]
         public virtual ICollection<OrderWithCustomer> Orders { get; set; } = new List<OrderWithCustomer>();
     }
 
