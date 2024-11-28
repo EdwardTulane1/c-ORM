@@ -8,6 +8,7 @@ using System.Data;
 using System.Reflection;
 using MyORM.Attributes;
 using MyORM.Attributes.Validation;
+using MyORM.Helper;
 
 namespace MyORM.Core
 {
@@ -15,6 +16,7 @@ namespace MyORM.Core
     {
         private readonly string _xmlBasePath;
         private readonly XmlStorageProvider _storageProvider;
+        private Dictionary<Type, HashSet<string>> _deletedEntities;
         protected Dictionary<Type, string> TableMappings { get; } = new Dictionary<Type, string>();
 
         /*
@@ -26,6 +28,7 @@ namespace MyORM.Core
         {
             _xmlBasePath = xmlBasePath;
             _storageProvider = new XmlStorageProvider(xmlBasePath);
+            _deletedEntities = new Dictionary<Type, HashSet<string>>();
             InitializeDbSets();
             MapEntities();
         }
@@ -80,23 +83,32 @@ namespace MyORM.Core
          */
         public void SaveChanges()
         {
+            // Clear previous tracking
+            _deletedEntities.Clear();
+
             var graph = BuildDependencyGraph();
             var sortedEntityTypes = graph.GetSortedEntities();
 
-            // First handle deletions in reverse order
+            // First handle deletions in reverse order ( the entites you depends on will be updated first)
             foreach (var entityType in sortedEntityTypes.AsEnumerable().Reverse())
             {
-
+                Console.WriteLine($"Saving entities of type: {entityType.Name}");
                 var dbSetProperty = GetType().GetProperties()
                     .First(p => p.PropertyType == typeof(DbSet<>).MakeGenericType(entityType));
                 var dbSet = dbSetProperty.GetValue(this);
-                var entities = ((IEnumerable<Entity>)dbSet.GetType()
-                    .GetProperty("Entities")?.GetValue(dbSet)).ToList();
+                Console.WriteLine($"DbSet property: {dbSetProperty.Name}");
+                
+                var entities = ((IEnumerable<Entity>)dbSet
+                    .GetType()
+                    .GetField("_entities", BindingFlags.NonPublic | BindingFlags.Instance)
+                    .GetValue(dbSet))
+                    .ToList();
 
                 foreach (var entity in entities)
                 {
                     if (entity.IsDeleted)
                     {
+                        HelperFuncs.TrackDeletedEntity(entity);
                         _storageProvider.DeleteEntity(entity, entityType.Name);
                     }
                     else
@@ -108,7 +120,8 @@ namespace MyORM.Core
                         entity.TakeSnapshot();
                     }
                 }
-            }    
+                HelperFuncs.ClearDeletedEntities();
+            }
         }
 
         private DependencyGraph BuildDependencyGraph()
@@ -150,6 +163,7 @@ namespace MyORM.Core
             return graph;
         }
 
+        
         public void Dispose()
         {
             // TODO: ... 

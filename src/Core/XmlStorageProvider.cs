@@ -9,6 +9,7 @@ using System.Xml.Linq;
 using System.Reflection;
 using MyORM.Attributes;
 using MyORM.Attributes.Validation;
+using MyORM.Helper;
 
 namespace MyORM.Core
 {
@@ -75,6 +76,10 @@ namespace MyORM.Core
 
             // Handle relationships
             HandleRelationshipProperties(entity, entityElement);
+
+            if(entity.IsDeleted){// case the related entity was deleted and cascade was set
+                return;
+            }
 
             // Find existing entity or add new one
             var keyProp = actualType.GetProperties()
@@ -181,7 +186,7 @@ namespace MyORM.Core
             {
                 // get the relationship attribute of each of them
                 var relAttr = prop.GetCustomAttribute<RelationshipAttribute>();
-                Console.WriteLine($"Handling relationship: {prop.Name} {relAttr.Type}, From: {relAttr.FromProperty} To: {relAttr.ToProperty}");
+                Console.WriteLine($"Handling relationship: {prop.Name} {relAttr.Type}, From: {relAttr.RelatedType} To: {relAttr.Type}");
 
                 switch (relAttr?.Type)
                 {
@@ -199,19 +204,40 @@ namespace MyORM.Core
                         }
                         break;
                     case RelationType.ManyToOne:
-                    case RelationType.OneToOne:
+                    case RelationType.OneToOne: // realtions In depend on
                         // Store the foreign key value
-                        var foreignKeyProp = entityType.GetProperties()
-                            .FirstOrDefault(p => p.Name == relAttr.FromProperty);
+                        // get key attribute of the related entity
+                        var foreignKeyProp = HelperFuncs.GetKeyProperty(relAttr.RelatedType);
+                        Console.WriteLine($"foreign entity type: {relAttr.RelatedType.Name}");
+                        Console.WriteLine($"Foreign key property: {foreignKeyProp.Name}");
+                        Console.WriteLine($"Foreign key value: {foreignKeyProp.GetValue(prop.GetValue(entity))?.ToString()}");
+                            
                         if (foreignKeyProp != null)
                         {
-                            var foreignKeyValue = foreignKeyProp.GetValue(entity);
-                            // get the related entity itself and make sure it is not deleted
-                            // TODO: check in xml if the foreign key wasnt deleted (order of save changes is problematic)
-                            // get from xml the related entity and check if it is deleted
-                            // not good! what if its saved after ours??
-                            
-                            entityElement.Add(new XElement($"{foreignKeyProp.Name}_key", foreignKeyValue?.ToString() ?? ""));
+                            // gets the keyattribute value of the related entity3
+                            var foreignKeyValue = foreignKeyProp.GetValue(prop.GetValue(entity))?.ToString()!;
+                            // check if the related entity wasn't deleted
+
+
+                            var isDeleted = HelperFuncs.IsEntityDeleted(relAttr.RelatedType, foreignKeyValue);
+                            if (isDeleted){
+                                // check for onDelete behavior
+                                switch(relAttr.OnDelete){
+                                    case DeleteBehavior.SetNull:
+                                        foreignKeyProp.SetValue(entity, null);
+                                        break;
+                                    case DeleteBehavior.Cascade:
+                                        // delete the entity
+                                        entity.IsDeleted = true;
+                                        DeleteEntity(entity, entityType.Name);
+                                        break;
+                                    case DeleteBehavior.Restrict:
+                                        // do nothing
+                                        break;
+                                }
+                            }
+                            // type and foreign key property name
+                            entityElement.Add(new XElement($"{relAttr.RelatedType.Name}_{foreignKeyProp.Name}", foreignKeyValue?.ToString() ?? ""));
                             
                         }
                         break;
@@ -256,8 +282,7 @@ namespace MyORM.Core
                 var rootElement = doc.Root;
 
                 // Get parent entity key using actual type
-                var parentKeyProp = parentType.GetProperties()
-                    .FirstOrDefault(p => p.GetCustomAttribute<KeyAttribute>() != null);
+                var parentKeyProp = HelperFuncs.GetKeyProperty(parentType);
 
                 if (parentKeyProp == null)
                 {
@@ -281,9 +306,7 @@ namespace MyORM.Core
                 foreach (var relatedEntity in relatedEntities)
                 {
                     var relatedType = relatedEntity.GetType();
-                    var relatedKeyProp = relatedType.GetProperties()
-                        .FirstOrDefault(p => p.GetCustomAttribute<KeyAttribute>() != null);
-
+                    var relatedKeyProp =  HelperFuncs.GetKeyProperty(relatedType);
                     if (relatedKeyProp == null)
                     {
                         Console.WriteLine($"No key property found for related entity {relatedType.Name}");
@@ -343,8 +366,8 @@ namespace MyORM.Core
                         break;
 
                     case RelationType.ManyToOne:
-                    case RelationType.OneToOne:
-                        // Nothing special needed for these cases as the foreign key will be deleted with the entity
+                    case RelationType.OneToOne: // TODO
+                       
                         break;
                 }
             }
@@ -410,7 +433,7 @@ namespace MyORM.Core
 
             // Find all related entities that reference this entity
             var relatedEntities = root.Elements("Entity")
-                .Where(e => e.Element($"{relAttr.ToProperty}_key")?.Value == parentKeyValue)
+                .Where(e => e.Element($"{relAttr.RelatedType.Name}_{HelperFuncs.GetKeyProperty(relAttr.RelatedType).Name}")?.Value == parentKeyValue)
                 .ToList();
 
             // Remove or update the related entities based on your business logic
@@ -421,21 +444,24 @@ namespace MyORM.Core
 
                 // check if the foreign key property is required
                 var foreignKeyProp = relatedEntity.GetType().GetProperties()
-                    .FirstOrDefault(p => p.Name == relAttr.ToProperty);
+                    .FirstOrDefault(p => p.Name == $"{relAttr.RelatedType.Name}_{HelperFuncs.GetKeyProperty(relAttr.RelatedType).Name}");
 
-                var foreignKeyElement = relatedEntity.Element($"{relAttr.ToProperty}_key");
+                var foreignKeyElement = relatedEntity.Element($"{relAttr.RelatedType.Name}_{HelperFuncs.GetKeyProperty(relAttr.RelatedType).Name}");
                 // check if the foreign key property is required
-                if (foreignKeyProp != null)
+                if (foreignKeyProp != null && foreignKeyElement != null) 
                 {
-                    if (foreignKeyProp.GetCustomAttribute<RequiredAttribute>() != null)
-                    {
-                        // delete the entity
-                        relatedEntity.Remove();
-                    }
-                    else
-                    {
-                        // set the foreign key to null/default
-                        foreignKeyElement.Value = null;
+                    // check onDelete behavior
+                    switch(relAttr.OnDelete){
+                        case DeleteBehavior.SetNull:
+                            foreignKeyElement.Value = null;
+                            break;
+                        case DeleteBehavior.Cascade:
+                            // delete the entity
+                            relatedEntity.Remove();
+                            break;
+                        case DeleteBehavior.Restrict:
+                            // do nothing
+                            break;
                     }
                 }
             }

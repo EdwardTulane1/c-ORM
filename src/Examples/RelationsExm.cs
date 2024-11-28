@@ -20,7 +20,7 @@ namespace MyORM.Examples
         [Column("LastName", false)]
         public string LastName { get; set; }
 
-        [Relationship(RelationType.OneToMany, typeof(OrderWithCustomer), fromProperty: "Id", toProperty: "CustomerId", onDelete: DeleteBehavior.SetNull)]
+        [Relationship(RelationType.OneToMany, typeof(OrderWithCustomer), onDelete: DeleteBehavior.SetNull)]
         public virtual ICollection<OrderWithCustomer> Orders { get; set; } = new List<OrderWithCustomer>();
     }
 
@@ -34,7 +34,7 @@ namespace MyORM.Examples
         [Column("Name", false)]
         public string Name { get; set; }
 
-        [Relationship(RelationType.ManyToMany, typeof(OrderWithCustomer), fromProperty: "Id", toProperty: "Id")]
+        [Relationship(RelationType.ManyToMany, typeof(OrderWithCustomer))]
         public virtual ICollection<OrderWithCustomer> Orders { get; set; } = new List<OrderWithCustomer>();
     }
 
@@ -48,13 +48,13 @@ namespace MyORM.Examples
         [Column("OrderDate", false)]
         public DateTime OrderDate { get; set; }
 
-        [Column("CustomerId", false)]
-        public int CustomerId { get; set; }
+        // [Column("CustomerId", false)]
+        // public int CustomerId { get; set; }
 
-        [Relationship(RelationType.ManyToOne, typeof(CustomerWithOrders), fromProperty: "CustomerId", toProperty: "Id")]
+        [Relationship(RelationType.ManyToOne, typeof(CustomerWithOrders))]
         public virtual CustomerWithOrders Customer { get; set; }
 
-        [Relationship(RelationType.ManyToMany, typeof(Category), fromProperty: "Id", toProperty: "Id")]
+        [Relationship(RelationType.ManyToMany, typeof(Category))]
         public virtual ICollection<Category> Categories { get; set; } = new List<Category>();
     }
 
@@ -119,8 +119,7 @@ namespace MyORM.Examples
                 {
                     Id = 1,
                     OrderDate = DateTime.Now,
-                    CustomerId = johnCustomer.Id,
-                    Customer = johnCustomer
+                    Customer = dannielCustomer
                 };
                 // Add categories to order
                 order.Categories.Add(electronics);
@@ -132,7 +131,6 @@ namespace MyORM.Examples
                 {
                     Id = 2,
                     OrderDate = DateTime.Now,
-                    CustomerId = dannielCustomer.Id,
                     Customer = dannielCustomer
                 };
                 // Add category to second order

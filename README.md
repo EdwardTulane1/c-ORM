@@ -50,3 +50,14 @@ many to one
 one to one
 one to many
 
+
+should I enforce relations from key to key? should I have 1 key only per entity?
+
+Updating value was hard, because I couldn't know if the related entity was deleted. Maybe it was deleted and wasn't written yet 
+So I add to update stuff in order to make sure the related entity is not deleted.
+Which means circular dependencies are not supported.
+
+
+I have to make sure how relations are made. what fields mapped to what field and how its saved in there.
+The mapping is between id to id. (keyAttribute)
+
