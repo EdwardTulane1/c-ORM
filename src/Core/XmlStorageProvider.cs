@@ -100,7 +100,7 @@ namespace MyORM.Core
                     root.Add(entityElement);
                 }
             }
-            else
+            else // neq entity
             {
                 root.Add(entityElement);
             }
@@ -130,6 +130,7 @@ namespace MyORM.Core
                 var keyValue = keyProp.GetValue(entity)?.ToString();
 
                 // Handle relationships before deleting the entity
+                Console.WriteLine($"Deleting entity: {entity.GetType().Name} with key {keyValue}");
                 HandleEntityDeletion(entity, keyValue);
 
                 // Delete the entity itself
@@ -198,7 +199,7 @@ namespace MyORM.Core
 
                         if (collection != null && collection.Any())
                         {
-                            var mappingFileName = $"{entityType.Name}_{relAttr.RelatedType.Name}.xml";
+                            var mappingFileName = HelperFuncs.getFileNameAlphaBetic(entityType.Name, relAttr.RelatedType.Name);
                             Console.WriteLine($"Saving many-to-many relationship to: {mappingFileName}");
                             SaveRelationshipMapping(entity, collection, mappingFileName);
                         }
@@ -221,6 +222,7 @@ namespace MyORM.Core
 
                             var isDeleted = HelperFuncs.IsEntityDeleted(relAttr.RelatedType, foreignKeyValue);
                             if (isDeleted){
+                                Console.WriteLine($"Related entity {relAttr.RelatedType.Name} with key {foreignKeyValue} was deleted");
                                 // check for onDelete behavior
                                 switch(relAttr.OnDelete){
                                     case DeleteBehavior.SetNull:
@@ -367,7 +369,7 @@ namespace MyORM.Core
 
                     case RelationType.ManyToOne:
                     case RelationType.OneToOne: // TODO
-                       
+                        //HandleOneToOneDeletion(entity, relAttr, entityKeyValue);
                         break;
                 }
             }
@@ -382,7 +384,8 @@ namespace MyORM.Core
          */
         private void DeleteManyToManyRelationships(Type parentType, Type relatedType, string parentKeyValue)
         {
-            var mappingFileName = $"{parentType.Name}_{relatedType.Name}.xml";
+            var mappingFileName = HelperFuncs.getFileNameAlphaBetic(parentType.Name, relatedType.Name);
+            Console.WriteLine($"Deleting many-to-many relationships for {parentType.Name} and {relatedType.Name}");
             var filePath = Path.Combine(_basePath, mappingFileName);
 
             if (!File.Exists(filePath)) return;

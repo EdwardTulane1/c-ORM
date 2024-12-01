@@ -36,6 +36,12 @@ namespace MyORM.Helper
             _deletedEntities[entityType].Add(keyValue);
         }
 
+        public static string getFileNameAlphaBetic(string type1, string type2)
+        {
+            var orderedTypes = new[] { type1, type2 }.OrderBy(t => t).ToArray();
+            return $"{orderedTypes[0]}_{orderedTypes[1]}.xml";
+        }
+
 
 
         public static bool IsEntityDeleted(Type type, string keyValue)
