@@ -111,7 +111,7 @@ namespace MyORM.Core
                         HelperFuncs.TrackDeletedEntity(entity);
                         _storageProvider.DeleteEntity(entity, entityType.Name);
                     }
-                    else
+                    else if(entity.HasChanges())
                     {
                         ValidationHelper.ValidateEntity(entity);
                         _storageProvider.SaveEntity(entity, entityType.Name);
