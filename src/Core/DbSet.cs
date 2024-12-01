@@ -41,7 +41,7 @@ namespace MyORM.Core
          */
         public void Remove(T entity)
         {
-            _entities.Remove(entity);
+            // _entities.Remove(entity);
             entity.IsDeleted = true;
         }
 

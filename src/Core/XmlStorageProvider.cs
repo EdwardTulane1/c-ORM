@@ -54,7 +54,6 @@ namespace MyORM.Core
             // Debug all properties - Get properties from the actual type, not just Entity
             var actualType = entity.GetType();  // This gets the real type (Customer or Order)
             ValidationHelper.ValidateEntity(entity); // validate the entity properties are valid
-            Console.WriteLine($"\nDebug info for {actualType.Name}:");
 
             foreach (var prop in actualType.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
             {
@@ -62,11 +61,7 @@ namespace MyORM.Core
                 var keyAttr = prop.GetCustomAttribute<KeyAttribute>();
                 var value = prop.GetValue(entity);
 
-                Console.WriteLine($"Property: {prop.Name}");
-                Console.WriteLine($"  Value: {value}");
-                Console.WriteLine($"  Column Attribute: {columnAttr?.ColumnName ?? "none"}");
-                Console.WriteLine($"  Key Attribute: {(keyAttr != null ? "yes" : "no")}");
-
+              
                 // The xml file contains only the properties with Column or Key attributes
                 if (columnAttr != null || keyAttr != null)
                 {
@@ -85,6 +80,7 @@ namespace MyORM.Core
             var keyProp = actualType.GetProperties()
                 .FirstOrDefault(p => p.GetCustomAttribute<KeyAttribute>() != null);
 
+            Console.WriteLine($"Type: {actualType.Name}, Key property: {keyProp?.Name}, IsModified: {entity.IsModified}, IsNew: {entity.IsNew}, value: {keyProp.GetValue(entity)?.ToString()}");
             if (keyProp != null && entity.IsModified) // the modified has to be anough but we double check the key
             {
                 var keyValue = keyProp.GetValue(entity)?.ToString();
@@ -93,10 +89,12 @@ namespace MyORM.Core
 
                 if (existingEntity != null)
                 {
+                    Console.WriteLine($"Replacing existing entity with key {keyValue}");
                     existingEntity.ReplaceWith(entityElement);
                 }
                 else
                 {
+                    Console.WriteLine($"Adding new entity with key {keyValue}");
                     root.Add(entityElement);
                 }
             }

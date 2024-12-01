@@ -71,6 +71,8 @@ namespace MyORM.Core
                 if (!OriginalValues.ContainsKey(prop.Name) || 
                     !Equals(OriginalValues[prop.Name], currentValue))
                 {
+
+                    IsModified = true;
                     return true;
                 }
             }

@@ -108,11 +108,13 @@ namespace MyORM.Core
                 {
                     if (entity.IsDeleted)
                     {
+                        Console.WriteLine($"Deleting entity: {entity.GetType().Name}");
                         HelperFuncs.TrackDeletedEntity(entity);
                         _storageProvider.DeleteEntity(entity, entityType.Name);
                     }
                     else if(entity.HasChanges())
                     {
+                        Console.WriteLine($"Saving entity: {entity.GetType().Name}, modified: {entity.IsModified}, new: {entity.IsNew}");
                         ValidationHelper.ValidateEntity(entity);
                         _storageProvider.SaveEntity(entity, entityType.Name);
                         entity.IsNew = false;
