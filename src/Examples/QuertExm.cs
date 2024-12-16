@@ -57,6 +57,11 @@ namespace MyORM.Examples
             carsExm.Cars.Add(new Car { Name = "Mercedes", Price = 45000 , Id = 8});
             carsExm.Cars.Add(new Car { Name = "Volvo", Price = 32000 , Id = 9});
             carsExm.Cars.Add(new Car { Name = "Skoda", Price = 120000 , Id = 10});
+            carsExm.Cars.Add(new Car { Name = "Mercedes", Price = 160000 , Id = 11});
+            carsExm.Cars.Add(new Car { Name = "Mercedes", Price = 190000 , Id = 12});
+            carsExm.Cars.Add(new Car { Name = "BMW", Price = 190000 , Id = 13});
+            carsExm.Cars.Add(new Car { Name = "BMW", Price = 120000 , Id = 14});
+            carsExm.Cars.Add(new Car { Name = "BMW", Price = 170000 , Id = 15});
             carsExm.SaveChanges();
         }
         public void RunQueryExamples()

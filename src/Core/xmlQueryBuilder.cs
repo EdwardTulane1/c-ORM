@@ -57,12 +57,12 @@ public class XmlQueryBuilder<T> where T : Entity
         }
 
         var doc = XDocument.Load(xmlPath);
-        var results = new List<XElement>();
+        var results = new List<T>();
 
         // Apply where conditions
         foreach (var element in doc.Root.Elements("Entity"))
         {
-            var entityElement = HelperFuncs.XmlToEntity(element, typeof(T));
+            var entityElement = HelperFuncs.XmlToEntity<T>(element);
             bool matchesAllConditions = true;
             foreach (var condition in _conditions)
             {
@@ -74,7 +74,7 @@ public class XmlQueryBuilder<T> where T : Entity
             }
             if (matchesAllConditions)
             {
-                results.Add(element);
+                results.Add(entityElement);
             }
         }
 
@@ -91,23 +91,22 @@ public class XmlQueryBuilder<T> where T : Entity
         var entities = new List<T>();
         foreach (var element in finalResults)
         {
-            var entity = XmlToEntity(element);
-            entities.Add(LoadRelatedEntities(entity));
+            entities.Add(LoadRelatedEntities(element));
         }
 
         return entities;
     }
 
-    private List<XElement> ApplyOrdering(List<XElement> elements)
+    private List<T> ApplyOrdering(List<T> elements)
     {
-        var ordered = new List<XElement>(elements);
+        var ordered = new List<T>(elements);
         ordered.Sort((a, b) =>
         {
             foreach (var prop in _orderByProperties)
             {
-                var valueA = a.Element(prop)?.Value ?? "";
-                var valueB = b.Element(prop)?.Value ?? "";
-                int comparison = string.Compare(valueA, valueB);
+                var valueA = a.GetType().GetProperty(prop)?.GetValue(a);
+                var valueB = b.GetType().GetProperty(prop)?.GetValue(b);
+                int comparison = string.Compare(valueA.ToString(), valueB.ToString());
                 
                 if (comparison != 0)
                 {
@@ -119,9 +118,9 @@ public class XmlQueryBuilder<T> where T : Entity
         return ordered;
     }
 
-    private List<XElement> ApplyPagination(List<XElement> elements)
+    private List<T> ApplyPagination(List<T> elements)
     {
-        var result = new List<XElement>();
+        var result = new List<T>();
         int startIndex = _skip.GetValueOrDefault(0);
         int endIndex = _take.HasValue ? 
             Math.Min(startIndex + _take.Value, elements.Count) : 
@@ -134,7 +133,7 @@ public class XmlQueryBuilder<T> where T : Entity
         return result;
     }
 
-    private bool EvaluateCondition(object entityElement, QueryCondition condition)
+    private bool EvaluateCondition(T entityElement, QueryCondition condition)
     {
         var elementValue = entityElement.GetType().GetProperty(condition.PropertyName)?.GetValue(entityElement);
         if (elementValue == null)
