@@ -89,7 +89,7 @@ namespace MyORM.Examples
                 // Create categories
                 var electronics = new Category { Id = 1, Name = "Electronics" };
                 var books = new Category { Id = 2, Name = "Books" };
-                
+
                 context.Categories.Add(electronics);
                 context.Categories.Add(books);
                 Console.WriteLine($"Added categories: Electronics, Books");
@@ -113,7 +113,7 @@ namespace MyORM.Examples
 
                 context.Customers.Add(dannielCustomer);
                 Console.WriteLine($"Added customer: {dannielCustomer.FirstName} {dannielCustomer.LastName}");
-                
+
                 // Example 2: Adding an order for the customer
                 var order = new OrderWithCustomer
                 {
@@ -144,6 +144,9 @@ namespace MyORM.Examples
 
                 // Example 3: Modifying a customer
                 johnCustomer.LastName = "Smith";
+                context.Categories.Remove(electronics);
+
+                order2.Categories.Add(electronics);
                 Console.WriteLine($"Modified customer last name to: {johnCustomer.LastName}");
                 context.SaveChanges();
                 Console.WriteLine("Changes saved to XML files");
@@ -151,6 +154,79 @@ namespace MyORM.Examples
 
             Console.WriteLine("\nPress any key to exit...");
             Console.ReadKey();
+        }
+
+        public void RunQueryExample()
+        {
+            Console.WriteLine("\nRunning Query Examples");
+            Console.WriteLine("-------------------------");
+
+            using (var context = new MyXmlContextWithRelations())
+            {
+                // Example 1: Basic query - find all customers with LastName "Smith"
+                Console.WriteLine("\n1. Finding customers with LastName 'Smith':");
+                var smithCustomers = context.Customers.AsQueryable()
+                    .Where(c => c.LastName == "Smith")
+                    .ToList();
+
+                foreach (var customer in smithCustomers)
+                {
+                    Console.WriteLine($"Found customer: {customer.FirstName} {customer.LastName}");
+                }
+
+                // Example 2: Ordering - get all customers ordered by FirstName
+                Console.WriteLine("\n2. All customers ordered by FirstName:");
+                var orderedCustomers = context.Customers.AsQueryable()
+                    .OrderBy(c => c.FirstName)
+                    .ToList();
+
+                foreach (var customer in orderedCustomers)
+                {
+                    Console.WriteLine($"Customer: {customer.FirstName} {customer.LastName}");
+                }
+
+                // Example 3: Pagination - get customers with skip and take
+                Console.WriteLine("\n3. Paginated customers (skip 1, take 1):");
+                var paginatedCustomers = context.Customers.AsQueryable()
+                    .Skip(1)
+                    .Take(1)
+                    .ToList();
+
+                foreach (var customer in paginatedCustomers)
+                {
+                    Console.WriteLine($"Customer: {customer.FirstName} {customer.LastName}");
+                }
+
+                // Example 4: Complex query - find orders with specific category
+                Console.WriteLine("\n4. Orders containing 'Books' category:");
+                var ordersWithBooks = context.Orders.AsQueryable()
+                    .Where(o => o.Categories.Any(c => c.Name == "Books"))
+                    .ToList();
+
+                foreach (var order in ordersWithBooks)
+                {
+                    Console.WriteLine($"Order ID: {order.Id}, Customer: {order.Customer?.FirstName} {order.Customer?.LastName}");
+                    Console.WriteLine("Categories:");
+                    foreach (var category in order.Categories)
+                    {
+                        Console.WriteLine($"- {category.Name}");
+                    }
+                }
+
+                // Example 5: Combined query - orders after specific date with ordering
+                var targetDate = new DateTime(2024, 1, 1);
+                Console.WriteLine($"\n5. Orders after {targetDate.ToShortDateString()} ordered by date:");
+                var recentOrders = context.Orders.AsQueryable()
+                    .Where(o => o.OrderDate > targetDate)
+                    .OrderBy(o => o.OrderDate)
+                    .ToList();
+
+                foreach (var order in recentOrders)
+                {
+                    Console.WriteLine($"Order ID: {order.Id}, Date: {order.OrderDate}, " +
+                                    $"Customer: {order.Customer?.FirstName} {order.Customer?.LastName}");
+                }
+            }
         }
     }
 }

@@ -10,6 +10,7 @@ using System.Reflection;
 using MyORM.Attributes;
 using MyORM.Attributes.Validation;
 using MyORM.Helper;
+using MyORM.Core;
 
 namespace MyORM.Core
 {
@@ -32,7 +33,7 @@ namespace MyORM.Core
 
 
 
-         
+
         /*
          * Saves an entity to its corresponding XML file
          * Handles both new entities and updates to existing ones
@@ -42,26 +43,21 @@ namespace MyORM.Core
         public void SaveEntity<T>(T entity, string tableName) where T : Entity
         {
             // each table has its own XML file (e.g. Customer.xml, Order.xml)
-            var xmlPath = Path.Combine(_basePath, $"{tableName}.xml");
-            Console.WriteLine($"Saving entity to: {xmlPath}");
-
+            var xmlPath = HelperFuncs.GetTablePath(_basePath, tableName);
             var doc = GetOrCreateDocument(tableName, xmlPath);
             var root = doc.Root;
 
             // each entity is an element in the XML file (e.g. <Entity>, <Entity>, <Entity>)
             var entityElement = new XElement("Entity");
-
             // Debug all properties - Get properties from the actual type, not just Entity
             var actualType = entity.GetType();  // This gets the real type (Customer or Order)
-            ValidationHelper.ValidateEntity(entity); // validate the entity properties are valid
-
+            // loops through all the properties of the entity
             foreach (var prop in actualType.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
             {
                 var columnAttr = prop.GetCustomAttribute<ColumnAttribute>();
                 var keyAttr = prop.GetCustomAttribute<KeyAttribute>();
                 var value = prop.GetValue(entity);
 
-              
                 // The xml file contains only the properties with Column or Key attributes
                 if (columnAttr != null || keyAttr != null)
                 {
@@ -72,7 +68,8 @@ namespace MyORM.Core
             // Handle relationships
             HandleRelationshipProperties(entity, entityElement);
 
-            if(entity.IsDeleted){// case the related entity was deleted and cascade was set
+            if (entity.IsDeleted)
+            {// case the related entity was deleted and cascade was set
                 return;
             }
 
@@ -98,7 +95,7 @@ namespace MyORM.Core
                     root.Add(entityElement);
                 }
             }
-            else // neq entity
+            else // TODO -  check if etity exists in db!!?? -  no. If he assigned with same id with a NEW keyword its his fault
             {
                 root.Add(entityElement);
             }
@@ -115,7 +112,7 @@ namespace MyORM.Core
          */
         public void DeleteEntity<T>(T entity, string tableName) where T : Entity
         {
-            var xmlPath = Path.Combine(_basePath, $"{tableName}.xml");
+            var xmlPath = HelperFuncs.GetTablePath(_basePath, tableName);
             var doc = GetOrCreateDocument(tableName, xmlPath);
             var root = doc.Root;
 
@@ -210,7 +207,7 @@ namespace MyORM.Core
                         Console.WriteLine($"foreign entity type: {relAttr.RelatedType.Name}");
                         Console.WriteLine($"Foreign key property: {foreignKeyProp.Name}");
                         Console.WriteLine($"Foreign key value: {foreignKeyProp.GetValue(prop.GetValue(entity))?.ToString()}");
-                            
+
                         if (foreignKeyProp != null)
                         {
                             // gets the keyattribute value of the related entity3
@@ -219,10 +216,12 @@ namespace MyORM.Core
 
 
                             var isDeleted = HelperFuncs.IsEntityDeleted(relAttr.RelatedType, foreignKeyValue);
-                            if (isDeleted){
+                            if (isDeleted)
+                            {
                                 Console.WriteLine($"Related entity {relAttr.RelatedType.Name} with key {foreignKeyValue} was deleted");
                                 // check for onDelete behavior
-                                switch(relAttr.OnDelete){
+                                switch (relAttr.OnDelete)
+                                {
                                     case DeleteBehavior.SetNull:
                                         foreignKeyProp.SetValue(entity, null);
                                         break;
@@ -238,7 +237,7 @@ namespace MyORM.Core
                             }
                             // type and foreign key property name
                             entityElement.Add(new XElement($"{relAttr.RelatedType.Name}_{foreignKeyProp.Name}", foreignKeyValue?.ToString() ?? ""));
-                            
+
                         }
                         break;
 
@@ -306,7 +305,7 @@ namespace MyORM.Core
                 foreach (var relatedEntity in relatedEntities)
                 {
                     var relatedType = relatedEntity.GetType();
-                    var relatedKeyProp =  HelperFuncs.GetKeyProperty(relatedType);
+                    var relatedKeyProp = HelperFuncs.GetKeyProperty(relatedType);
                     if (relatedKeyProp == null)
                     {
                         Console.WriteLine($"No key property found for related entity {relatedType.Name}");
@@ -449,16 +448,17 @@ namespace MyORM.Core
 
                 var foreignKeyElement = relatedEntity.Element($"{relAttr.RelatedType.Name}_{HelperFuncs.GetKeyProperty(relAttr.RelatedType).Name}");
                 // check if the foreign key property is required
-                if (foreignKeyProp != null && foreignKeyElement != null) 
+                if (foreignKeyProp != null && foreignKeyElement != null)
                 {
                     // check onDelete behavior
-                    switch(relAttr.OnDelete){
+                    switch (relAttr.OnDelete)
+                    {
                         case DeleteBehavior.SetNull:
                             foreignKeyElement.Value = null;
                             break;
                         case DeleteBehavior.Cascade:
-                            // delete the entity
-                            relatedEntity.Remove();
+                            // GET TYPE OF ENTITY AND DELETE IT
+                            relatedEntity.Remove(); // but what with its relations???
                             break;
                         case DeleteBehavior.Restrict:
                             // do nothing
@@ -468,5 +468,15 @@ namespace MyORM.Core
             }
             doc.Save(relatedXmlPath);
         }
+
+
+
+
+
+        // public IQueryable<T> Query<T>() where T : Entity
+        // {
+        //     var builder = new XmlQueryBuilder<T>(_basePath, typeof(T).Name);
+        //     return builder.Execute().AsQueryable();
+        // }
     }
 }

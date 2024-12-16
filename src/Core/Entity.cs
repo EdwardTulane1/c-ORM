@@ -35,15 +35,12 @@ namespace MyORM.Core
          */
         internal void TakeSnapshot()
         {
-            Console.WriteLine("Taking snapshot");
             OriginalValues.Clear();
             var properties = GetType().GetProperties()
                 .Where(p => p.GetCustomAttribute<ColumnAttribute>() != null || 
                            p.GetCustomAttribute<KeyAttribute>() != null);
-            Console.WriteLine("Properties: " + string.Join(", ", properties.Select(p => p.Name)));  
             foreach (var prop in properties)
             {
-                Console.WriteLine($"Property: {prop.Name}, Value: {prop.GetValue(this)}");
                 OriginalValues[prop.Name] = prop.GetValue(this)!;
             }
         }
@@ -61,10 +58,7 @@ namespace MyORM.Core
             var properties = GetType().GetProperties()
                 .Where(p => p.GetCustomAttribute<ColumnAttribute>() != null || 
                            p.GetCustomAttribute<KeyAttribute>() != null);
- 
-            Console.WriteLine("Snapshot: " + string.Join(", ", OriginalValues.Select(kv => $"{kv.Key}: {kv.Value}")));
-            Console.WriteLine("Current: " + string.Join(", ", properties.Select(p => $"{p.Name}: {p.GetValue(this)}")));
-            
+        
             foreach (var prop in properties)
             {
                 var currentValue = prop.GetValue(this);

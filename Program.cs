@@ -6,8 +6,9 @@ namespace MyORM
     {
         static void Main(string[] args)
         {
-            var example = new ValidationExample();
-            example.RunExample();
+            var example = new CarQueryExample();
+            example.createDataForQuery();
+            example.RunQueryExamples();
 
             Console.WriteLine("\nPress any key to exit...");
             Console.ReadKey();

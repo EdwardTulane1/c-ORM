@@ -1,7 +1,8 @@
 using MyORM.Attributes;
 using System.Reflection;
 using MyORM.Core;
-
+using System.IO;
+using System.Xml.Linq;
 
 namespace MyORM.Helper
 {
@@ -42,8 +43,6 @@ namespace MyORM.Helper
             return $"{orderedTypes[0]}_{orderedTypes[1]}.xml";
         }
 
-
-
         public static bool IsEntityDeleted(Type type, string keyValue)
         {
             return _deletedEntities.ContainsKey(type) &&
@@ -55,6 +54,35 @@ namespace MyORM.Helper
             _deletedEntities.Clear();
         }
 
+        public static string GetTablePath(string basePath, string tableName)
+        {
+            return Path.Combine(basePath, $"{tableName}.xml");
+        }
 
+        public static T XmlToEntity<T>(XElement element) where T : Entity
+        {
+            return (T)XmlToEntity(element, typeof(T));
+        }
+
+        public static object XmlToEntity(XElement element, Type entityType)
+        {
+            var entity = Activator.CreateInstance(entityType);
+            var properties = entityType.GetProperties();
+            
+            foreach (var prop in properties)
+            {
+                if (prop.GetCustomAttribute<ColumnAttribute>() != null || 
+                    prop.GetCustomAttribute<KeyAttribute>() != null)
+                {
+                    var value = element.Element(prop.Name)?.Value;
+                    if (value != null)
+                    {
+                        var convertedValue = Convert.ChangeType(value, prop.PropertyType);
+                        prop.SetValue(entity, convertedValue);
+                    }
+                }
+            }
+            return entity;
+        }
     }
 }

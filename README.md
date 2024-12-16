@@ -28,7 +28,6 @@ Make it possible to get an element (With all its related entites)
 Validations
 
 
-It doesn't know its modified based id... 
 
 A strategic decision - to have event on modify or to live with @saveChanges
 https://sampathdissanyake.medium.com/racking-data-changes-in-c-net-c2be9ed333fd
@@ -61,3 +60,7 @@ Which means circular dependencies are not supported.
 I have to make sure how relations are made. what fields mapped to what field and how its saved in there.
 The mapping is between id to id. (keyAttribute)
 
+
+
+TODO: 
+- implement one to one relation
