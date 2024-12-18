@@ -3,6 +3,7 @@ using MyORM.Helper;
 using MyORM.Attributes;
 using MyORM.Core;
 using System.Xml.Linq;
+using System.Xml;
 
 namespace MyORM.Core;
 
@@ -21,6 +22,14 @@ public class XmlQueryBuilder<T> where T : Entity
         _basePath = basePath;
         _tableName = tableName;
     }
+
+    public record EntityPlusXml<TEntity>(TEntity Entity, XElement xmlElement);
+    public class EntityPlusXmlList<Z> : List<EntityPlusXml<Z>> {
+        public EntityPlusXmlList(List<EntityPlusXml<Z>> list) : base(list) { }
+        public EntityPlusXmlList() : base() { }
+    }
+
+
 
     public XmlQueryBuilder<T> Where(string propertyName, string op, object value)
     {
@@ -56,11 +65,11 @@ public class XmlQueryBuilder<T> where T : Entity
             return new List<T>();
         }
 
-        var doc = XDocument.Load(xmlPath);
-        var results = new List<T>();
+        var doc = XDocument.Load(xmlPath)!;
+        var results = new EntityPlusXmlList<T>();  // Changed to tuple list
 
         // Apply where conditions
-        foreach (var element in doc.Root.Elements("Entity"))
+        foreach (var element in doc!.Root!.Elements("Entity"))
         {
             var entityElement = HelperFuncs.XmlToEntity<T>(element);
             bool matchesAllConditions = true;
@@ -74,7 +83,7 @@ public class XmlQueryBuilder<T> where T : Entity
             }
             if (matchesAllConditions)
             {
-                results.Add(entityElement);
+                results.Add(new EntityPlusXml<T>(entityElement, element));
             }
         }
 
@@ -91,22 +100,26 @@ public class XmlQueryBuilder<T> where T : Entity
         var entities = new List<T>();
         foreach (var element in finalResults)
         {
+            // BIG TODO: check if needed
+            element.Entity.IsDeleted = false;
+            element.Entity.IsModified = false;
+            element.Entity.IsNew = false;
             entities.Add(LoadRelatedEntities(element));
         }
 
         return entities;
     }
 
-    private List<T> ApplyOrdering(List<T> elements)
+    private EntityPlusXmlList<T> ApplyOrdering(EntityPlusXmlList<T> elements)
     {
-        var ordered = new List<T>(elements);
+        var ordered = new EntityPlusXmlList<T>(elements);
         ordered.Sort((a, b) =>
         {
             foreach (var prop in _orderByProperties)
             {
-                var valueA = a.GetType().GetProperty(prop)?.GetValue(a);
-                var valueB = b.GetType().GetProperty(prop)?.GetValue(b);
-                int comparison = string.Compare(valueA.ToString(), valueB.ToString());
+                var valueA = a.Entity.GetType().GetProperty(prop)?.GetValue(a.Entity);
+                var valueB = b.Entity.GetType().GetProperty(prop)?.GetValue(b.Entity);
+                int comparison = CompareValues(valueA, valueB);
                 
                 if (comparison != 0)
                 {
@@ -118,9 +131,9 @@ public class XmlQueryBuilder<T> where T : Entity
         return ordered;
     }
 
-    private List<T> ApplyPagination(List<T> elements)
+    private EntityPlusXmlList<T> ApplyPagination(EntityPlusXmlList<T> elements)
     {
-        var result = new List<T>();
+        var result = new EntityPlusXmlList<T>();
         int startIndex = _skip.GetValueOrDefault(0);
         int endIndex = _take.HasValue ? 
             Math.Min(startIndex + _take.Value, elements.Count) : 
@@ -141,60 +154,45 @@ public class XmlQueryBuilder<T> where T : Entity
             return false;
         }
 
-        var elementType = elementValue.GetType();
-
-        // Handle numeric types
-        if (IsNumericType(elementType))
+        switch (condition.Operator.ToUpper())
         {
-            // Convert both values to decimal for consistent numeric comparison
-            decimal numericElement = Convert.ToDecimal(elementValue);
-            decimal numericCondition = Convert.ToDecimal(condition.Value);
+            case "=":
+                return CompareValues(elementValue, condition.Value) == 0;
+            case ">":
+                return CompareValues(elementValue, condition.Value) > 0;
+            case "<":
+                return CompareValues(elementValue, condition.Value) < 0;
+            case ">=":
+                return CompareValues(elementValue, condition.Value) >= 0;
+            case "<=":
+                return CompareValues(elementValue, condition.Value) <= 0;
+            case "!=":
+                return CompareValues(elementValue, condition.Value) != 0;
+            case "LIKE":
+                return elementValue.ToString()!.Contains(condition.Value.ToString()!, StringComparison.OrdinalIgnoreCase);
+            default:
+                throw new NotSupportedException($"Operator {condition.Operator} not supported");
+        }
+    }
 
-            switch (condition.Operator.ToUpper())
-            {
-                case "=":
-                    return numericElement == numericCondition;
-                case ">":
-                    return numericElement > numericCondition;
-                case "<":
-                    return numericElement < numericCondition;
-                case ">=":
-                    return numericElement >= numericCondition;
-                case "<=":
-                    return numericElement <= numericCondition;
-                case "!=":
-                    return numericElement != numericCondition;
-                case "LIKE":
-                    return elementValue.ToString().Contains(condition.Value.ToString(), StringComparison.OrdinalIgnoreCase);
-                default:
-                    throw new NotSupportedException($"Operator {condition.Operator} not supported");
-            }
+    private int CompareValues(object? valueA, object? valueB)
+    {
+        if (valueA == null || valueB == null)
+        {
+            return valueA == null && valueB == null ? 0 : (valueA == null ? -1 : 1);
+        }
+
+        var type = valueA.GetType();
+        
+        if (IsNumericType(type))
+        {
+            decimal numA = Convert.ToDecimal(valueA);
+            decimal numB = Convert.ToDecimal(valueB);
+            return numA.CompareTo(numB);
         }
         else
         {
-            // String comparison
-            string strElement = elementValue.ToString();
-            string strCondition = condition.Value.ToString();
-
-            switch (condition.Operator.ToUpper())
-            {
-                case "=":
-                    return string.Equals(strElement, strCondition, StringComparison.OrdinalIgnoreCase);
-                case ">":
-                    return string.Compare(strElement, strCondition, StringComparison.OrdinalIgnoreCase) > 0;
-                case "<":
-                    return string.Compare(strElement, strCondition, StringComparison.OrdinalIgnoreCase) < 0;
-                case ">=":
-                    return string.Compare(strElement, strCondition, StringComparison.OrdinalIgnoreCase) >= 0;
-                case "<=":
-                    return string.Compare(strElement, strCondition, StringComparison.OrdinalIgnoreCase) <= 0;
-                case "!=":
-                    return !string.Equals(strElement, strCondition, StringComparison.OrdinalIgnoreCase);
-                case "LIKE":
-                    return strElement.Contains(strCondition, StringComparison.OrdinalIgnoreCase);
-                default:
-                    throw new NotSupportedException($"Operator {condition.Operator} not supported");
-            }
+            return string.Compare(valueA.ToString(), valueB.ToString(), StringComparison.OrdinalIgnoreCase);
         }
     }
 
@@ -221,27 +219,7 @@ public class XmlQueryBuilder<T> where T : Entity
         }
     }
 
-    private T XmlToEntity(XElement element)
-    {
-        var entity = Activator.CreateInstance<T>();
-        var properties = typeof(T).GetProperties();
-        foreach (var prop in properties)
-        {
-            if (prop.GetCustomAttribute<ColumnAttribute>() != null || 
-                prop.GetCustomAttribute<KeyAttribute>() != null)
-            {
-                var value = element.Element(prop.Name)?.Value;
-                if (value != null)
-                {
-                    var convertedValue = Convert.ChangeType(value, prop.PropertyType);
-                    prop.SetValue(entity, convertedValue);
-                }
-            }
-        }
-        return entity;
-    }
-
-    private T LoadRelatedEntities(T entity)
+    private T LoadRelatedEntities(EntityPlusXml<T> entityElement)
     {
         var properties = typeof(T).GetProperties();
         foreach (var prop in properties)
@@ -249,25 +227,25 @@ public class XmlQueryBuilder<T> where T : Entity
             var relAttr = prop.GetCustomAttribute<RelationshipAttribute>();
             if (relAttr != null)
             {
+
                 switch (relAttr.Type)
                 {
                     case RelationType.ManyToMany:
-                        LoadManyToManyRelations(entity, prop, relAttr);
-                        break;
-                    case RelationType.ManyToOne:
-                    case RelationType.OneToOne:
-                        LoadSingleRelation(entity, prop, relAttr);
+                        LoadManyToManyRelations(entityElement, prop, relAttr);
                         break;
                     case RelationType.OneToMany:
-                        LoadOneToManyRelations(entity, prop, relAttr);
+                    case RelationType.OneToOne:
+                        LoadSingleRelation(entityElement, prop, relAttr);
+                        break;
+                    case RelationType.ManyToOne:
                         break;
                 }
             }
         }
-        return entity;
+        return entityElement.Entity;
     }
 
-    private void LoadManyToManyRelations(T entity, PropertyInfo prop, RelationshipAttribute relAttr)
+    private void LoadManyToManyRelations(EntityPlusXml<T> entityElement, PropertyInfo prop, RelationshipAttribute relAttr)
     {
         var mappingFileName = HelperFuncs.getFileNameAlphaBetic(typeof(T).Name, relAttr.RelatedType.Name);
         var filePath = Path.Combine(_basePath, mappingFileName);
@@ -276,7 +254,7 @@ public class XmlQueryBuilder<T> where T : Entity
 
         var doc = XDocument.Load(filePath);
         var entityKeyValue = HelperFuncs.GetKeyProperty(typeof(T))
-            .GetValue(entity)?.ToString();
+            .GetValue(entityElement.Entity)?.ToString();
 
         var relatedKeys = new List<string>();
         foreach (var rel in doc.Root.Elements("Relationship"))
@@ -286,38 +264,35 @@ public class XmlQueryBuilder<T> where T : Entity
                 var relatedKey = rel.Element("RelatedKey")?.Value;
                 if (relatedKey != null)
                 {
+                    Console.WriteLine($"relatedKey: {relatedKey}");
                     relatedKeys.Add(relatedKey);
                 }
             }
         }
 
         var relatedEntities = LoadEntitiesByKeys(relAttr.RelatedType, relatedKeys);
-        prop.SetValue(entity, relatedEntities);
+        Console.WriteLine($"relatedEntities: {relatedEntities}");
+        prop.SetValue(entityElement.Entity, relatedEntities);
     }
 
-    private void LoadSingleRelation(T entity, PropertyInfo prop, RelationshipAttribute relAttr)
+    private void LoadSingleRelation(EntityPlusXml<T> entityElement, PropertyInfo prop, RelationshipAttribute relAttr)
     {
         var foreignKeyProp = $"{relAttr.RelatedType.Name}_{HelperFuncs.GetKeyProperty(relAttr.RelatedType).Name}";
-        var foreignKeyValue = entity.GetType()
-            .GetProperty(foreignKeyProp)
-            ?.GetValue(entity)
-            ?.ToString();
+        // get entity from the xml
+        // how to log tyhe entity with all its properties and values
 
+        var foreignKeyValue = entityElement.xmlElement.Element(foreignKeyProp)?.Value;
+
+        Console.WriteLine($"foreignKeyProp: {foreignKeyProp}, foreignKeyValue: {foreignKeyValue}");
         if (foreignKeyValue != null)
         {
+            Console.WriteLine($"foreignKeyValue: {foreignKeyValue}");
             var relatedEntity = LoadEntityByKey(relAttr.RelatedType, foreignKeyValue);
-            prop.SetValue(entity, relatedEntity);
+            Console.WriteLine($"relatedEntity: {relatedEntity}");
+            prop.SetValue(entityElement.Entity, relatedEntity);
         }
     }
 
-    private void LoadOneToManyRelations(T entity, PropertyInfo prop, RelationshipAttribute relAttr)
-    {
-        var entityKeyValue = HelperFuncs.GetKeyProperty(typeof(T))
-            .GetValue(entity)?.ToString();
-
-        var relatedEntities = LoadRelatedEntities(relAttr.RelatedType, typeof(T), entityKeyValue);
-        prop.SetValue(entity, relatedEntities);
-    }
 
     private ICollection<object> LoadEntitiesByKeys(Type entityType, IEnumerable<string> keys)
     {

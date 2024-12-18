@@ -4,6 +4,20 @@ using MyORM.Examples;
 
 namespace MyORM.Examples
 {
+    [Table("Manufacturers")]
+    public class Manufacturer : Entity
+    {
+        [Key(isAutoIncrement: false)]
+        [Column("Id", false)]
+        public int Id { get; set; }
+
+        [Column("Name", false)]
+        public string Name { get; set; }
+
+        [Relationship(RelationType.OneToMany, typeof(Car), onDelete: DeleteBehavior.SetNull)]
+        public virtual ICollection<Car> Cars { get; set; } = new List<Car>();
+    }
+
     [Table("Cars")]
     public class Car : Entity
     {
@@ -16,6 +30,9 @@ namespace MyORM.Examples
 
         [Column("Price", false)]
         public int Price { get; set; }
+
+        [Relationship(RelationType.ManyToOne, typeof(Manufacturer))]
+        public virtual Manufacturer Manufacturer { get; set; }
     }
 
     public class CarQuery : XmlQueryBuilder<Car>
@@ -34,6 +51,7 @@ namespace MyORM.Examples
         );
 
         public DbSet<Car> Cars { get; set; }
+        public DbSet<Manufacturer> Manufacturers { get; set; }
 
         public carsExm() : base(XmlStoragePath)
         {
@@ -41,85 +59,61 @@ namespace MyORM.Examples
         }
     }
 
-
     public class CarQueryExample
     {
         public void createDataForQuery()
         {
             var carsExm = new carsExm();
-            carsExm.Cars.Add(new Car { Name = "Toyota", Price = 25000 , Id = 1});
-            carsExm.Cars.Add(new Car { Name = "Honda", Price = 20000 , Id = 2});
-            carsExm.Cars.Add(new Car { Name = "Ford", Price = 30000 , Id = 3});
-            carsExm.Cars.Add(new Car { Name = "Chevrolet", Price = 28000 , Id = 4});
-            carsExm.Cars.Add(new Car { Name = "Volkswagen", Price = 26000 , Id = 5});
-            carsExm.Cars.Add(new Car { Name = "Audi", Price = 35000 , Id = 6});
-            carsExm.Cars.Add(new Car { Name = "BMW", Price = 40000 , Id = 7});
-            carsExm.Cars.Add(new Car { Name = "Mercedes", Price = 45000 , Id = 8});
-            carsExm.Cars.Add(new Car { Name = "Volvo", Price = 32000 , Id = 9});
-            carsExm.Cars.Add(new Car { Name = "Skoda", Price = 120000 , Id = 10});
-            carsExm.Cars.Add(new Car { Name = "Mercedes", Price = 160000 , Id = 11});
-            carsExm.Cars.Add(new Car { Name = "Mercedes", Price = 190000 , Id = 12});
-            carsExm.Cars.Add(new Car { Name = "BMW", Price = 190000 , Id = 13});
-            carsExm.Cars.Add(new Car { Name = "BMW", Price = 120000 , Id = 14});
-            carsExm.Cars.Add(new Car { Name = "BMW", Price = 170000 , Id = 15});
+
+            // Create manufacturers
+            var volkswagen = new Manufacturer { Id = 101, Name = "Volkswagen Group" };
+            var bmw = new Manufacturer { Id = 102, Name = "BMW Group" };
+            var daimler = new Manufacturer { Id = 103, Name = "Daimler AG" };
+            var toyota = new Manufacturer { Id = 104, Name = "Toyota Motor Corp" };
+
+            carsExm.Manufacturers.Add(volkswagen);
+            carsExm.Manufacturers.Add(bmw);
+            carsExm.Manufacturers.Add(daimler);
+            carsExm.Manufacturers.Add(toyota);
+
+            // Add cars with their manufacturers
+            carsExm.Cars.Add(new Car { Name = "Toyota Camry", Price = 25000, Id = 1, Manufacturer = toyota });
+            carsExm.Cars.Add(new Car { Name = "BMW 3 Series", Price = 40000, Id = 2, Manufacturer = bmw });
+            carsExm.Cars.Add(new Car { Name = "Mercedes C-Class", Price = 45000, Id = 3, Manufacturer = daimler });
+            carsExm.Cars.Add(new Car { Name = "Audi A4", Price = 35000, Id = 4, Manufacturer = volkswagen });
+            carsExm.Cars.Add(new Car { Name = "BMW 5 Series", Price = 55000, Id = 5, Manufacturer = bmw });
+            carsExm.Cars.Add(new Car { Name = "Mercedes E-Class", Price = 60000, Id = 6, Manufacturer = daimler });
+
             carsExm.SaveChanges();
         }
+
         public void RunQueryExamples()
         {
-            // Initialize the query builder with a base path and table name
             var queryBuilder = new CarQuery();
 
-            // Example 1: Basic Where query
-            var expensiveCars = queryBuilder
-                .Where("Price", ">", 50000)
-                .Execute();
-            
-            Console.WriteLine("Expensive cars (>$50,000):");
-            foreach (var car in expensiveCars)
-            {
-                Console.WriteLine($"- {car.Name}: ${car.Price}");
-            }
-
-            // Example 2: Multiple conditions with ordering
-            var luxuryCars = queryBuilder
-                .Where("Price", ">", 80000)
-                .Where("Name", "LIKE", "BMW")
-                .OrderBy("Price", descending: true)
+            // Query examples with relationships
+            Console.WriteLine("Cars by BMW:");
+            var bmwCars = queryBuilder
+                .Where("Name", "=", "BMW 3 Series")
                 .Execute();
 
-            Console.WriteLine("\nLuxury BMW cars ordered by price (descending):");
-            foreach (var car in luxuryCars)
+            foreach (var car in bmwCars)
             {
-                Console.WriteLine($"- {car.Name}: ${car.Price}");
+                Console.WriteLine(car.ToString());
+                Console.WriteLine($"- {car.Name}: ${car.Price}. p: {car.Price} {car.Manufacturer.Name}");
             }
 
-            // Example 3: Pagination
-            var pagedCars = queryBuilder
-                .OrderBy("Name")
-                .Skip(2)
-                .Take(3)
-                .Execute();
-
-            Console.WriteLine("\nPaged cars (skip 2, take 3):");
-            foreach (var car in pagedCars)
-            {
-                Console.WriteLine($"- {car.Name}: ${car.Price}");
-            }
-
-            // Example 4: Combining multiple operations
-            var filteredCars = queryBuilder
-                .Where("Price", "<", 100000)
-                .Where("Name", "LIKE", "Mercedes")
-                .OrderBy("Price")
-                .Skip(1)
-                .Take(5)
-                .Execute();
-
-            Console.WriteLine("\nFiltered Mercedes cars (Price < $100,000, ordered, paged):");
-            foreach (var car in filteredCars)
-            {
-                Console.WriteLine($"- {car.Name}: ${car.Price}");
-            }
+            // Get all manufacturers and their cars
+            Console.WriteLine("\nManufacturers and their cars:");
+            // var manufacturers = queryBuilder.Manufacturers.AsQueryable().ToList();
+            // foreach (var manufacturer in manufacturers)
+            // {
+            //     Console.WriteLine($"\n{manufacturer.Name}:");
+            //     foreach (var car in manufacturer.Cars)
+            //     {
+            //         Console.WriteLine($"- {car.Name}: ${car.Price}");
+            //     }
+            // }
         }
     }
 }

@@ -8,7 +8,6 @@
 using System.Xml.Linq;
 using System.Reflection;
 using MyORM.Attributes;
-using MyORM.Attributes.Validation;
 using MyORM.Helper;
 using MyORM.Core;
 
@@ -49,7 +48,7 @@ namespace MyORM.Core
 
             // each entity is an element in the XML file (e.g. <Entity>, <Entity>, <Entity>)
             var entityElement = new XElement("Entity");
-            // Debug all properties - Get properties from the actual type, not just Entity
+            //Get properties from the actual type, not just Entity
             var actualType = entity.GetType();  // This gets the real type (Customer or Order)
             // loops through all the properties of the entity
             foreach (var prop in actualType.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
@@ -74,11 +73,15 @@ namespace MyORM.Core
             }
 
             // Find existing entity or add new one
-            var keyProp = actualType.GetProperties()
-                .FirstOrDefault(p => p.GetCustomAttribute<KeyAttribute>() != null);
+            var keyProp = HelperFuncs.GetKeyProperty(actualType); // the key property of the entity (not the value of it)
 
             Console.WriteLine($"Type: {actualType.Name}, Key property: {keyProp?.Name}, IsModified: {entity.IsModified}, IsNew: {entity.IsNew}, value: {keyProp.GetValue(entity)?.ToString()}");
-            if (keyProp != null && entity.IsModified) // the modified has to be anough but we double check the key
+
+            // BIG TODO - in here throw an error if a user created a new with the same key its a bug!!. maybe do on validation
+            // 1. check if there's a key property
+            // 2. check if there's exectly one key property
+            // 3. check if its not exist and its a new entity
+            if (keyProp != null && entity.IsModified) // the modified has to be anough but we double check the key. if a user created a new with the same key its a bug!!
             {
                 var keyValue = keyProp.GetValue(entity)?.ToString();
                 var existingEntity = root.Elements("Entity")
@@ -397,6 +400,12 @@ namespace MyORM.Core
 
             foreach (var rel in relationshipsToRemove)
             {
+                var relatedKey = rel.Element("RelatedKey")?.Value;
+                var relatedVType = rel.Element("RelatedType")?.Value;
+                // get entity by type and key
+
+                // BOG TODO -  this is not working
+                // var relatedEntity = HelperFuncs.XmlToEntity(rel, relatedVType);
                 rel.Remove();
             }
 

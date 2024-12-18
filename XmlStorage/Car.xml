@@ -1,0 +1,75 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Entities>
+  <Entity>
+    <Id>1</Id>
+    <Name>Toyota Camry</Name>
+    <Price>25000</Price>
+    <Manufacturer_Id>104</Manufacturer_Id>
+  </Entity>
+  <Entity>
+    <Id>2</Id>
+    <Name>BMW 3 Series</Name>
+    <Price>40000</Price>
+    <Manufacturer_Id>102</Manufacturer_Id>
+  </Entity>
+  <Entity>
+    <Id>3</Id>
+    <Name>Mercedes C-Class</Name>
+    <Price>45000</Price>
+    <Manufacturer_Id>103</Manufacturer_Id>
+  </Entity>
+  <Entity>
+    <Id>4</Id>
+    <Name>Audi A4</Name>
+    <Price>35000</Price>
+    <Manufacturer_Id>101</Manufacturer_Id>
+  </Entity>
+  <Entity>
+    <Id>5</Id>
+    <Name>BMW 5 Series</Name>
+    <Price>55000</Price>
+    <Manufacturer_Id>102</Manufacturer_Id>
+  </Entity>
+  <Entity>
+    <Id>6</Id>
+    <Name>Mercedes E-Class</Name>
+    <Price>60000</Price>
+    <Manufacturer_Id>103</Manufacturer_Id>
+  </Entity>
+  <Entity>
+    <Id>1</Id>
+    <Name>Toyota Camry</Name>
+    <Price>25000</Price>
+    <Manufacturer_Id>104</Manufacturer_Id>
+  </Entity>
+  <Entity>
+    <Id>2</Id>
+    <Name>BMW 3 Series</Name>
+    <Price>40000</Price>
+    <Manufacturer_Id>102</Manufacturer_Id>
+  </Entity>
+  <Entity>
+    <Id>3</Id>
+    <Name>Mercedes C-Class</Name>
+    <Price>45000</Price>
+    <Manufacturer_Id>103</Manufacturer_Id>
+  </Entity>
+  <Entity>
+    <Id>4</Id>
+    <Name>Audi A4</Name>
+    <Price>35000</Price>
+    <Manufacturer_Id>101</Manufacturer_Id>
+  </Entity>
+  <Entity>
+    <Id>5</Id>
+    <Name>BMW 5 Series</Name>
+    <Price>55000</Price>
+    <Manufacturer_Id>102</Manufacturer_Id>
+  </Entity>
+  <Entity>
+    <Id>6</Id>
+    <Name>Mercedes E-Class</Name>
+    <Price>60000</Price>
+    <Manufacturer_Id>103</Manufacturer_Id>
+  </Entity>
+</Entities>

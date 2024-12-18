@@ -61,6 +61,9 @@ I have to make sure how relations are made. what fields mapped to what field and
 The mapping is between id to id. (keyAttribute)
 
 
+I've used linq just to connect and read objects from the xml
+
 
 TODO: 
 - implement one to one relation
+- when deleting enitity for each of its related entites convert to real entity and delete it
