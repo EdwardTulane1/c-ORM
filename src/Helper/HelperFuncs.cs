@@ -68,10 +68,10 @@ namespace MyORM.Helper
         {
             var entity = Activator.CreateInstance(entityType);
             var properties = entityType.GetProperties();
-            
+
             foreach (var prop in properties)
             {
-                if (prop.GetCustomAttribute<ColumnAttribute>() != null || 
+                if (prop.GetCustomAttribute<ColumnAttribute>() != null ||
                     prop.GetCustomAttribute<KeyAttribute>() != null)
                 {
                     var value = element.Element(prop.Name)?.Value;
@@ -84,7 +84,27 @@ namespace MyORM.Helper
             }
             return entity;
         }
-    }
 
-    
+
+        public static object LoadEntityByKey(Type entityType, string key)
+        {
+            var xmlPath = HelperFuncs.GetTablePath(
+                Path.Combine(Directory.GetCurrentDirectory(), "XmlStorage"),
+                entityType.Name);
+            if (!File.Exists(xmlPath)) return null;
+
+            var doc = XDocument.Load(xmlPath);
+            var keyProp = HelperFuncs.GetKeyProperty(entityType);
+
+            foreach (var element in doc.Root.Elements("Entity"))
+            {
+                if (element.Element(keyProp.Name)?.Value == key)
+                {
+                    return HelperFuncs.XmlToEntity(element, entityType);
+                }
+            }
+            return null;
+        }
+
+    }
 }

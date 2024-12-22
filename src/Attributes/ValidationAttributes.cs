@@ -2,6 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Xml.Linq;
+using MyORM.Core;
+using MyORM.Helper;
+
 
 namespace MyORM.Attributes.Validation
 {
@@ -46,7 +50,7 @@ namespace MyORM.Attributes.Validation
         public string? ErrorMessage { get; set; }
         public ValidationErrorLevel ErrorLevel { get; set; } = ValidationErrorLevel.Error;
         public ValidationRuleType RuleType { get; protected set; }
-        
+
         public abstract ValidationResult Validate(object value, string propertyName);
     }
 
@@ -84,7 +88,7 @@ namespace MyORM.Attributes.Validation
         public override ValidationResult Validate(object value, string propertyName)
         {
             if (value == null) return ValidationResult.Success;
-            
+
             var str = value as string;
             if (str != null && (str.Length < MinLength || str.Length > MaxLength))
             {
@@ -110,7 +114,7 @@ namespace MyORM.Attributes.Validation
         public override ValidationResult Validate(object value, string propertyName)
         {
             if (value == null) return ValidationResult.Success;
-            
+
             var number = value as int?;
             if (number != null && (number < MinValue || number > MaxValue))
             {
@@ -131,7 +135,7 @@ namespace MyORM.Attributes.Validation
         public override ValidationResult Validate(object value, string propertyName)
         {
             if (value == null) return ValidationResult.Success;
-            
+
             var str = value as string;
             if (str != null && !str.Contains("@"))
             {
@@ -155,7 +159,7 @@ namespace MyORM.Attributes.Validation
         public override ValidationResult Validate(object value, string propertyName)
         {
             if (value == null) return ValidationResult.Success;
-            
+
             var str = value as string;
             if (str != null && !System.Text.RegularExpressions.Regex.IsMatch(str, Pattern))
             {
@@ -185,7 +189,7 @@ namespace MyORM.Attributes.Validation
     {
         public List<ValidationResult> ValidationResults { get; }
 
-        public ValidationException(List<ValidationResult> results) 
+        public ValidationException(List<ValidationResult> results)
             : base(FormatValidationMessage(results))
         {
             ValidationResults = results;
@@ -196,27 +200,92 @@ namespace MyORM.Attributes.Validation
             var errorMessages = results
                 .Select(r => $"{r.PropertyName}: {r.Message} ({r.ErrorLevel})")
                 .ToList();
-            
-            return $"Validation failed with {results.Count} errors:\n" + 
+
+            return $"Validation failed with {results.Count} errors:\n" +
                    string.Join("\n", errorMessages);
         }
     }
 
     public static class ValidationHelper
     {
+        private static ValidationResult ValidateKeyProperty(object entity)
+        {
+            var keyProps = entity.GetType().GetProperties()
+                .Where(p => p.GetCustomAttribute<KeyAttribute>() != null)
+                .ToList();
+
+            if (keyProps.Count == 0)
+            {
+                return new ValidationResult(
+                    false, 
+                    $"Entity {entity.GetType().Name} must have at least one key property", 
+                    "Key", 
+                    ValidationErrorLevel.Critical);
+            }
+
+            if (keyProps.Count > 1)
+            {
+                return new ValidationResult(
+                    false, 
+                    $"Entity {entity.GetType().Name} cannot have multiple key properties", 
+                    "Key", 
+                    ValidationErrorLevel.Critical);
+            }
+
+            return ValidationResult.Success;
+        }
+
+        private static ValidationResult ValidateKeyUniqueness(object entity)
+        {
+            var keyProp = HelperFuncs.GetKeyProperty(entity.GetType());
+            var keyValue = keyProp.GetValue(entity)?.ToString();
+            var entityType = entity.GetType();
+
+            // Check if entity is new and key already exists
+            if (((Entity)entity).IsNew)
+            {
+                var xmlPath = HelperFuncs.GetTablePath(
+                    Path.Combine(Directory.GetCurrentDirectory(), "XmlStorage"), 
+                    entityType.Name);
+
+                if (File.Exists(xmlPath))
+                {
+                    var doc = XDocument.Load(xmlPath);
+                    var existingEntity = doc.Root?.Elements("Entity")
+                        .FirstOrDefault(e => e.Element(keyProp.Name)?.Value == keyValue);
+
+                    if (existingEntity != null)
+                    {
+                        return new ValidationResult(
+                            false,
+                            $"An entity of type {entityType.Name} with key {keyValue} already exists",
+                            keyProp.Name,
+                            ValidationErrorLevel.Critical);
+                    }
+                }
+            }
+
+            return ValidationResult.Success;
+        }
+
         public static void ValidateEntity(object entity)
         {
             Console.WriteLine($"Validating entity of type {entity.GetType().Name}");
+            
             var results = new List<ValidationResult>();
-            var properties = entity.GetType().GetProperties();
 
-            // If propertyName is specified, only validate that property
+            // Global validations
+            results.Add(ValidateKeyProperty(entity));
+            results.Add(ValidateKeyUniqueness(entity));
+
+            // Property-level validations
+            var properties = entity.GetType().GetProperties();
             foreach (var property in properties)
             {
                 var value = property.GetValue(entity)!;
                 var validationAttributes = property.GetCustomAttributes(typeof(ValidationAttribute), true) as ValidationAttribute[];
 
-                if (validationAttributes != null )
+                if (validationAttributes != null)
                 {
                     foreach (var attribute in validationAttributes)
                     {
@@ -230,14 +299,13 @@ namespace MyORM.Attributes.Validation
             }
 
             // If there are any errors (not warnings), throw exception
-            var errors = results.Where(r => r.ErrorLevel >= ValidationErrorLevel.Error).ToList();
+            var errors = results.Where(r => r.ErrorLevel >= ValidationErrorLevel.Error && !r.IsValid).ToList();
             if (errors.Any())
             {
                 LogValidationErrors(errors);
                 throw new ValidationException(errors);
             }
         }
-
 
         private static void LogValidationErrors(List<ValidationResult> errors)
         {
@@ -257,8 +325,8 @@ namespace MyORM.Attributes.Validation
             Console.WriteLine();
         }
     }
-} 
+}
 
 
 
-            // Otherwise validate all properties
+// Otherwise validate all properties

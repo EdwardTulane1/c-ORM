@@ -287,7 +287,7 @@ public class XmlQueryBuilder<T> where T : Entity
         if (foreignKeyValue != null)
         {
             Console.WriteLine($"foreignKeyValue: {foreignKeyValue}");
-            var relatedEntity = LoadEntityByKey(relAttr.RelatedType, foreignKeyValue);
+            var relatedEntity = HelperFuncs.LoadEntityByKey(relAttr.RelatedType, foreignKeyValue);
             Console.WriteLine($"relatedEntity: {relatedEntity}");
             prop.SetValue(entityElement.Entity, relatedEntity);
         }
@@ -363,23 +363,7 @@ public class XmlQueryBuilder<T> where T : Entity
         return entities;
     }
 
-    private object LoadEntityByKey(Type entityType, string key)
-    {
-        var xmlPath = HelperFuncs.GetTablePath(_basePath, entityType.Name);
-        if (!File.Exists(xmlPath)) return null;
-
-        var doc = XDocument.Load(xmlPath);
-        var keyProp = HelperFuncs.GetKeyProperty(entityType);
-
-        foreach (var element in doc.Root.Elements("Entity"))
-        {
-            if (element.Element(keyProp.Name)?.Value == key)
-            {
-                return HelperFuncs.XmlToEntity(element, entityType);
-            }
-        }
-        return null;
-    }
+    
 
     private ICollection<object> LoadRelatedEntities(Type entityType, Type parentType, string parentKeyValue)
     {

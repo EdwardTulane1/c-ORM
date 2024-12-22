@@ -77,10 +77,7 @@ namespace MyORM.Core
 
             Console.WriteLine($"Type: {actualType.Name}, Key property: {keyProp?.Name}, IsModified: {entity.IsModified}, IsNew: {entity.IsNew}, value: {keyProp.GetValue(entity)?.ToString()}");
 
-            // BIG TODO - in here throw an error if a user created a new with the same key its a bug!!. maybe do on validation
-            // 1. check if there's a key property
-            // 2. check if there's exectly one key property
-            // 3. check if its not exist and its a new entity
+
             if (keyProp != null && entity.IsModified) // the modified has to be anough but we double check the key. if a user created a new with the same key its a bug!!
             {
                 var keyValue = keyProp.GetValue(entity)?.ToString();
@@ -367,7 +364,7 @@ namespace MyORM.Core
                         HandleOneToManyDeletion(entity, relAttr, entityKeyValue);
                         break;
 
-                    case RelationType.ManyToOne:
+                    case RelationType.ManyToOne: // If I'm many to one then the relatuionship is saved on my side. Once I'm delted the relationship is deleted and all good
                     case RelationType.OneToOne: // TODO BIG TODO - 
                         //HandleOneToOneDeletion(entity, relAttr, entityKeyValue);
                         break;
@@ -401,11 +398,25 @@ namespace MyORM.Core
             foreach (var rel in relationshipsToRemove)
             {
                 var relatedKey = rel.Element("RelatedKey")?.Value;
-                var relatedVType = rel.Element("RelatedType")?.Value;
+                var relatedTypeString = rel.Element("RelatedType")?.Value;
+
+                var relatedAType = Assembly.GetExecutingAssembly().GetTypes()
+                    .FirstOrDefault(t => t.Name == relatedTypeString);
+
+                if (relatedAType != null)
+                {
+                    var relatedEntity = (Entity)HelperFuncs.LoadEntityByKey(relatedAType, relatedKey);
+                    if (relatedEntity != null)
+                    {
+
+                        relatedEntity.IsDeleted = true;
+                        HelperFuncs.TrackDeletedEntity(relatedEntity);
+                        DeleteEntity(relatedEntity, relatedAType.Name);
+                    }
+                }
                 // get entity by type and key
 
                 // BOG TODO -  this is not working
-                // var relatedEntity = HelperFuncs.XmlToEntity(rel, relatedVType);
                 rel.Remove();
             }
 
