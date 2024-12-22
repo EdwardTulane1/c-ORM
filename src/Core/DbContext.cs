@@ -147,12 +147,12 @@ namespace MyORM.Core
                     if(relAttr == null) continue;
                     switch (relAttr.Type)
                     {
-                        case RelationType.ManyToOne:
+                        case RelationType.OneToMany:
                         case RelationType.OneToOne:
                             // Add dependency from current entity to related entity
                             graph.AddDependency(entityType, relAttr.RelatedType);
                             break;
-                        case RelationType.OneToMany:
+                        case RelationType.ManyToOne:
                             // Add dependency from related entity to current entity
                             graph.AddDependency(relAttr.RelatedType, entityType);
                             break;

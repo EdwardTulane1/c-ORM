@@ -368,7 +368,7 @@ namespace MyORM.Core
                         break;
 
                     case RelationType.ManyToOne:
-                    case RelationType.OneToOne: // TODO
+                    case RelationType.OneToOne: // TODO BIG TODO - 
                         //HandleOneToOneDeletion(entity, relAttr, entityKeyValue);
                         break;
                 }

@@ -227,17 +227,17 @@ public class XmlQueryBuilder<T> where T : Entity
             var relAttr = prop.GetCustomAttribute<RelationshipAttribute>();
             if (relAttr != null)
             {
-
                 switch (relAttr.Type)
                 {
                     case RelationType.ManyToMany:
                         LoadManyToManyRelations(entityElement, prop, relAttr);
                         break;
-                    case RelationType.OneToMany:
+                    case RelationType.ManyToOne:
                     case RelationType.OneToOne:
                         LoadSingleRelation(entityElement, prop, relAttr);
                         break;
-                    case RelationType.ManyToOne:
+                    case RelationType.OneToMany:
+                        LoadOneToManyRelations(entityElement, prop, relAttr);
                         break;
                 }
             }
@@ -293,6 +293,41 @@ public class XmlQueryBuilder<T> where T : Entity
         }
     }
 
+    private void LoadOneToManyRelations(EntityPlusXml<T> entityElement, PropertyInfo prop, RelationshipAttribute relAttr)
+    {
+        // Get the key value of the current entity
+        var entityKeyProp = HelperFuncs.GetKeyProperty(typeof(T));
+        var entityKeyValue = entityKeyProp.GetValue(entityElement.Entity)?.ToString();
+            
+        var foreignKeyProp = $"{entityElement.Entity.GetType().Name}_{entityKeyProp.Name}";
+
+        var relatedEntityFilePath = HelperFuncs.GetTablePath(_basePath, relAttr.RelatedType.Name);
+        if (!File.Exists(relatedEntityFilePath)) return;
+
+        var doc = XDocument.Load(relatedEntityFilePath);
+
+
+        // var relatedEntities = new List<object>();
+
+         var listType = typeof(List<>).MakeGenericType(relAttr.RelatedType);
+         var relatedEntities = (System.Collections.IList)Activator.CreateInstance(listType, 0);  // Use non-generic IList
+
+
+        foreach (var element in doc?.Root?.Elements("Entity"))
+        {
+            var elementKey = element.Element(foreignKeyProp)?.Value;
+            if (elementKey != null && elementKey == entityKeyValue)
+            {
+                // var zz = HelperFuncs.XmlToEntity(element, relAttr.RelatedType);
+                // Console.WriteLine($"zz: {zz}");
+                relatedEntities.Add(HelperFuncs.XmlToEntity(element, relAttr.RelatedType));
+            }
+            
+        }
+
+        Console.WriteLine($" Prop name: {prop.Name}, relatedEntities: {relatedEntities}");
+        prop.SetValue(entityElement.Entity, relatedEntities);       
+    }
 
     private ICollection<object> LoadEntitiesByKeys(Type entityType, IEnumerable<string> keys)
     {
@@ -340,20 +375,7 @@ public class XmlQueryBuilder<T> where T : Entity
         {
             if (element.Element(keyProp.Name)?.Value == key)
             {
-                var entity = Activator.CreateInstance(entityType);
-                foreach (var prop in entityType.GetProperties())
-                {
-                    if (prop.GetCustomAttribute<ColumnAttribute>() != null || 
-                        prop.GetCustomAttribute<KeyAttribute>() != null)
-                    {
-                        var value = element.Element(prop.Name)?.Value;
-                        if (value != null)
-                        {
-                            prop.SetValue(entity, Convert.ChangeType(value, prop.PropertyType));
-                        }
-                    }
-                }
-                return entity;
+                return HelperFuncs.XmlToEntity(element, entityType);
             }
         }
         return null;

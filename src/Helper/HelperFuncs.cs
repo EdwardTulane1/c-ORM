@@ -85,4 +85,6 @@ namespace MyORM.Helper
             return entity;
         }
     }
+
+    
 }
