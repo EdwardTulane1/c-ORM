@@ -41,7 +41,11 @@ namespace MyORM.Core
          */
         public void Remove(T entity)
         {
-            // _entities.Remove(entity);
+            // _entities.Remove(entity)
+            if(!_entities.Contains(entity)){
+                _entities.Add(entity);
+            }
+            Console.WriteLine($"removing {entity.GetType().Name},");
             entity.IsDeleted = true;
         }
 

@@ -451,34 +451,38 @@ namespace MyORM.Core
             var doc = XDocument.Load(relatedXmlPath);
             var root = doc.Root;
 
+            var relationProperty  = $"{entity.GetType().Name}_{HelperFuncs.GetKeyProperty(relAttr.RelatedType).Name}";
+
             // Find all related entities that reference this entity
             var relatedEntities = root.Elements("Entity")
-                .Where(e => e.Element($"{relAttr.RelatedType.Name}_{HelperFuncs.GetKeyProperty(relAttr.RelatedType).Name}")?.Value == parentKeyValue)
+                .Where(e => e.Element(relationProperty)?.Value == parentKeyValue)
                 .ToList();
 
+                
+
             // Remove or update the related entities based on your business logic
-            foreach (var relatedEntity in relatedEntities)
+            foreach (var relatedEntityXML in relatedEntities)
             {
                 // check if foreign key property is required
-
-
                 // check if the foreign key property is required
-                var foreignKeyProp = relatedEntity.GetType().GetProperties()
-                    .FirstOrDefault(p => p.Name == $"{relAttr.RelatedType.Name}_{HelperFuncs.GetKeyProperty(relAttr.RelatedType).Name}");
+                var relatedEntity = HelperFuncs.XmlToEntity(relatedEntityXML, relAttr.RelatedType);
+                var foreignKeyProp = relatedEntityXML.Element(relationProperty);
+                var foreignKeyElement = relatedEntityXML.Element(relationProperty);
 
-                var foreignKeyElement = relatedEntity.Element($"{relAttr.RelatedType.Name}_{HelperFuncs.GetKeyProperty(relAttr.RelatedType).Name}");
                 // check if the foreign key property is required
                 if (foreignKeyProp != null && foreignKeyElement != null)
                 {
                     // check onDelete behavior
+                    Console.WriteLine($"onDelete behavior: {relAttr.OnDelete}, attirbute to delete: {foreignKeyElement.Value}");
                     switch (relAttr.OnDelete)
                     {
                         case DeleteBehavior.SetNull:
-                            foreignKeyElement.Value = null;
+                            foreignKeyElement.Remove();
                             break;
                         case DeleteBehavior.Cascade:
-                            // GET TYPE OF ENTITY AND DELETE IT
-                            relatedEntity.Remove(); // but what with its relations???
+                            // GET TYPE OF ENTITY AND DELETE IT PROPERLY - BIG TODO
+                            Console.WriteLine($"deleting entity: {relatedEntity.GetType().Name}, ");
+                            relatedEntityXML.Remove(); // but what with its relations???
                             break;
                         case DeleteBehavior.Restrict:
                             // do nothing

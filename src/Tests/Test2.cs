@@ -1,8 +1,7 @@
 using MyORM.Attributes;
 using MyORM.Core;
-using MyORM.Examples;
 
-namespace MyORM.Examples
+namespace MyORM.Tests
 {
     [Table("Manufacturers")]
     public class Manufacturer : Entity
@@ -37,21 +36,21 @@ namespace MyORM.Examples
 
     public class CarQuery : XmlQueryBuilder<Car>
     {
-        public CarQuery() : base(carsExm.XmlStoragePath, "Car")
+        public CarQuery() : base(Test1.XmlStoragePath, "Car")
         {
-            Console.WriteLine($"XML files will be stored in: {carsExm.XmlStoragePath}");
+            Console.WriteLine($"XML files will be stored in: {Test1.XmlStoragePath}");
         }
     }
 
     public class ManufacturerQuery : XmlQueryBuilder<Manufacturer>
     {
-        public ManufacturerQuery() : base(carsExm.XmlStoragePath, "Manufacturer")
+        public ManufacturerQuery() : base(Test1.XmlStoragePath, "Manufacturer")
         {
-            Console.WriteLine($"XML files will be stored in: {carsExm.XmlStoragePath}");
+            Console.WriteLine($"XML files will be stored in: {Test1.XmlStoragePath}");
         }
     }
 
-    public class carsExm : DbContext
+    public class Test1 : DbContext
     {
         public static readonly string XmlStoragePath = Path.Combine(
             Directory.GetCurrentDirectory(),
@@ -61,41 +60,41 @@ namespace MyORM.Examples
         public DbSet<Car> Cars { get; set; }
         public DbSet<Manufacturer> Manufacturers { get; set; }
 
-        public carsExm() : base(XmlStoragePath)
+        public Test1() : base(XmlStoragePath)
         {
             Console.WriteLine($"XML files will be stored in: {XmlStoragePath}");
         }
     }
 
-    public class CarQueryExample
+    public class Test
     {
         public void createDataForQuery()
         {
-            var carsExm = new carsExm();
+            var test1 = new Test1();
 
-            // Create manufacturers
             var volkswagen = new Manufacturer { Id = 101, Name = "Volkswagen Group" };
             var bmw = new Manufacturer { Id = 102, Name = "BMW Group" };
             var daimler = new Manufacturer { Id = 103, Name = "Daimler AG" };
             var toyota = new Manufacturer { Id = 104, Name = "Toyota Motor Corp" };
 
-            carsExm.Manufacturers.Add(volkswagen);
-            carsExm.Manufacturers.Add(bmw);
-            carsExm.Manufacturers.Add(daimler);
-            carsExm.Manufacturers.Add(toyota);
+            test1.Manufacturers.Add(volkswagen);
+            test1.Manufacturers.Add(bmw);
+            test1.Manufacturers.Add(daimler);
+            test1.Manufacturers.Add(toyota);
 
             // Add cars with their manufacturers
-            carsExm.Cars.Add(new Car { Name = "Toyota Camry", Price = 25000, Id = 1, Manufacturer = toyota });
-            carsExm.Cars.Add(new Car { Name = "BMW 3 Series", Price = 40000, Id = 2, Manufacturer = bmw });
-            carsExm.Cars.Add(new Car { Name = "Mercedes C-Class", Price = 45000, Id = 3, Manufacturer = daimler });
-            carsExm.Cars.Add(new Car { Name = "Audi A4", Price = 35000, Id = 4, Manufacturer = volkswagen });
-            carsExm.Cars.Add(new Car { Name = "BMW 5 Series", Price = 55000, Id = 5, Manufacturer = bmw });
-            carsExm.Cars.Add(new Car { Name = "Mercedes E-Class", Price = 60000, Id = 6, Manufacturer = daimler });
+            test1.Cars.Add(new Car { Name = "Toyota Camry", Price = 25000, Id = 1, Manufacturer = toyota });
+            test1.Cars.Add(new Car { Name = "BMW 3 Series", Price = 40000, Id = 2, Manufacturer = bmw });
+            test1.Cars.Add(new Car { Name = "Mercedes C-Class", Price = 45000, Id = 3, Manufacturer = daimler });
+            test1.Cars.Add(new Car { Name = "Audi A4", Price = 35000, Id = 4, Manufacturer = volkswagen });
+            test1.Cars.Add(new Car { Name = "BMW 5 Series", Price = 55000, Id = 5, Manufacturer = bmw });
+            test1.Cars.Add(new Car { Name = "Mercedes E-Class", Price = 60000, Id = 6, Manufacturer = daimler });
 
-            carsExm.SaveChanges();
+            test1.SaveChanges();
+
         }
 
-        public void RunQueryExamples()
+        public void runQuery()
         {
             var queryBuilder = new CarQuery();
             var manufacturerQuery = new ManufacturerQuery();
@@ -123,8 +122,11 @@ namespace MyORM.Examples
 
             // Get all manufacturers and their cars
             Console.WriteLine("\nManufacturers and their cars:");
-           
         }
     }
+
 }
 
+
+
+// TEsts To run -  running twice generating error due to violating key uniqness - works
