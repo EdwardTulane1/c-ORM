@@ -211,7 +211,12 @@ namespace MyORM.Core
                         if (foreignKeyProp != null)
                         {
                             // gets the keyattribute value of the related entity3
-                            var foreignKeyValue = foreignKeyProp.GetValue(prop.GetValue(entity))?.ToString()!;
+                            var relatedEntity = prop.GetValue(entity) as Entity;
+                            if(relatedEntity == null)
+                            {
+                                continue;
+                            }
+                            var foreignKeyValue = foreignKeyProp.GetValue(relatedEntity)?.ToString()!;
                             // check if the related entity wasn't deleted
 
 
@@ -255,45 +260,27 @@ namespace MyORM.Core
          * @param relatedEntities: Collection of related entities
          * @param relationshipFile: Name of the file to store relationships
          */
-        private void SaveRelationshipMapping<T>(T parentEntity, IEnumerable<Entity> relatedEntities, string relationshipFile) where T : Entity
+        private void SaveRelationshipMapping<T>(T entity, IEnumerable<Entity> relatedEntities, string relationshipFile) where T : Entity
         {
             try
             {
-                // The mapping is always to the key in the related entity
-                var parentType = parentEntity.GetType();
-                //console.WriteLine($"Saving many-to-many relationships for {parentType.Name}");
-
+                var entityType = entity.GetType();
                 var filePath = Path.Combine(_basePath, relationshipFile);
-                //console.WriteLine($"Relationship file path: {filePath}");
 
-                XDocument doc;
-                if (File.Exists(filePath))
-                {
-                    doc = XDocument.Load(filePath);
-                    //console.WriteLine("Loaded existing relationship file");
-                }
-                else
-                {
-                    doc = new XDocument(new XElement("Relationships"));
-                    //console.WriteLine("Created new relationship file");
-                }
+                XDocument doc = File.Exists(filePath) 
+                    ? XDocument.Load(filePath)
+                    : new XDocument(new XElement("Relationships"));
 
                 var rootElement = doc.Root;
+                var entityKeyProp = HelperFuncs.GetKeyProperty(entityType);
 
-                // Get parent entity key using actual type
-                var parentKeyProp = HelperFuncs.GetKeyProperty(parentType);
+            
 
-                if (parentKeyProp == null)
-                {
-                    throw new InvalidOperationException($"No key property found for {parentType.Name}");
-                }
+                var entityKeyValue = entityKeyProp.GetValue(entity)?.ToString();
 
-                var parentKeyValue = parentKeyProp.GetValue(parentEntity)?.ToString();
-                //console.WriteLine($"Parent key value: {parentKeyValue}");
-
-                // Remove existing relationships for this parent
+                // Remove existing relationships for this entity
                 var existingRelationships = rootElement.Elements("Relationship")
-                    .Where(e => e.Element("ParentKey")?.Value == parentKeyValue)
+                    .Where(e => e.Element(entityType.Name)?.Value == entityKeyValue)
                     .ToList();
 
                 foreach (var rel in existingRelationships)
@@ -306,32 +293,23 @@ namespace MyORM.Core
                 {
                     var relatedType = relatedEntity.GetType();
                     var relatedKeyProp = HelperFuncs.GetKeyProperty(relatedType);
-                    if (relatedKeyProp == null)
-                    {
-                        //console.WriteLine($"No key property found for related entity {relatedType.Name}");
-                        continue;
-                    }
+                    if (relatedKeyProp == null) continue;
 
                     var relatedKeyValue = relatedKeyProp.GetValue(relatedEntity)?.ToString();
-                    //console.WriteLine($"Adding relationship: Parent {parentKeyValue} -> Related {relatedKeyValue}");
 
                     var relationshipElement = new XElement("Relationship",
-                        new XElement("ParentKey", parentKeyValue),
-                        new XElement("RelatedKey", relatedKeyValue),
-                        new XElement("ParentType", parentType.Name),
-                        new XElement("RelatedType", relatedType.Name)
+                        new XElement(entityType.Name, entityKeyValue),
+                        new XElement(relatedType.Name, relatedKeyValue)
                     );
 
                     rootElement.Add(relationshipElement);
                 }
 
                 doc.Save(filePath);
-                //console.WriteLine($"Saved relationships to {filePath}");
             }
             catch (Exception ex)
             {
-                //console.WriteLine($"Error saving many-to-many relationships: {ex.Message}");
-                //console.WriteLine(ex.StackTrace);
+                // Handle exception
             }
         }
 
@@ -379,10 +357,9 @@ namespace MyORM.Core
          * @param relatedType: Type of the related entity
          * @param parentKeyValue: Key value of the parent entity
          */
-        private void DeleteManyToManyRelationships(Type parentType, Type relatedType, string parentKeyValue)
+        private void DeleteManyToManyRelationships(Type entityType, Type relatedType, string entityKeyValue)
         {
-            var mappingFileName = HelperFuncs.getFileNameAlphaBetic(parentType.Name, relatedType.Name);
-            //console.WriteLine($"Deleting many-to-many relationships for {parentType.Name} and {relatedType.Name}");
+            var mappingFileName = HelperFuncs.getFileNameAlphaBetic(entityType.Name, relatedType.Name);
             var filePath = Path.Combine(_basePath, mappingFileName);
 
             if (!File.Exists(filePath)) return;
@@ -390,43 +367,30 @@ namespace MyORM.Core
             var doc = XDocument.Load(filePath);
             var rootElement = doc.Root;
 
-            // Remove all relationships where this entity is the parent
+            // Remove all relationships where this entity appears
             var relationshipsToRemove = rootElement.Elements("Relationship")
-                .Where(e => e.Element("ParentKey")?.Value == parentKeyValue)
+                .Where(e => e.Element(entityType.Name)?.Value == entityKeyValue ||
+                           e.Element(relatedType.Name)?.Value == entityKeyValue)
                 .ToList();
 
             foreach (var rel in relationshipsToRemove)
             {
-                var relatedKey = rel.Element("RelatedKey")?.Value;
-                var relatedTypeString = rel.Element("RelatedType")?.Value;
+                var relatedKey = rel.Element(relatedType.Name)?.Value;
 
                 var relatedAType = Assembly.GetExecutingAssembly().GetTypes()
-                    .FirstOrDefault(t => t.Name == relatedTypeString);
+                    .FirstOrDefault(t => t.Name == relatedType.Name);
 
                 if (relatedAType != null)
                 {
                     var relatedEntity = (Entity)HelperFuncs.LoadEntityByKey(relatedAType, relatedKey);
                     if (relatedEntity != null)
                     {
-
                         relatedEntity.IsDeleted = true;
                         HelperFuncs.TrackDeletedEntity(relatedEntity);
                         DeleteEntity(relatedEntity, relatedAType.Name);
                     }
                 }
-                // get entity by type and key
 
-                // BOG TODO -  this is not working
-                rel.Remove();
-            }
-
-            // Also remove relationships where this entity is the related entity
-            relationshipsToRemove = rootElement.Elements("Relationship")
-                .Where(e => e.Element("RelatedKey")?.Value == parentKeyValue)
-                .ToList();
-
-            foreach (var rel in relationshipsToRemove)
-            {
                 rel.Remove();
             }
 
@@ -457,8 +421,6 @@ namespace MyORM.Core
             var relatedEntities = root.Elements("Entity")
                 .Where(e => e.Element(relationProperty)?.Value == parentKeyValue)
                 .ToList();
-
-                
 
             // Remove or update the related entities based on your business logic
             foreach (var relatedEntityXML in relatedEntities)

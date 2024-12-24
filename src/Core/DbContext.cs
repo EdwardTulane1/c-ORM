@@ -106,7 +106,7 @@ namespace MyORM.Core
 
                 foreach (var entity in entities)
                 {
-                    //console.WriteLine($"3. entity: {entity.GetType().Name}, {entity.IsDeleted}, {entity.IsNew}, {entity.IsModified}");
+                  
                     if (entity.IsDeleted)
                     {
                         //console.WriteLine($"4. Deleting entity: {entity.GetType().Name}");
@@ -115,7 +115,6 @@ namespace MyORM.Core
                     }
                     else if (entity.HasChanges())
                     {
-                        //console.WriteLine($"5. Saving entity: {entity.GetType().Name}, modified: {entity.IsModified}, new: {entity.IsNew}");
                         ValidationHelper.ValidateEntity(entity);
                         _storageProvider.SaveEntity(entity, entityType.Name);
                         entity.IsNew = false;
@@ -149,10 +148,11 @@ namespace MyORM.Core
                     switch (relAttr.Type)
                     {
                         case RelationType.OneToMany:
-                        case RelationType.OneToOne:
                             // Add dependency from current entity to related entity
                             graph.AddDependency(entityType, relAttr.RelatedType);
                             break;
+                        case RelationType.OneToOne:
+                            break; // will alwaysw cause circular dependency
                         case RelationType.ManyToOne:
                             // Add dependency from related entity to current entity
                             graph.AddDependency(relAttr.RelatedType, entityType);

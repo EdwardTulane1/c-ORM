@@ -60,7 +60,7 @@ public class XmlQueryBuilder<T> where T : Entity
     public List<T> Execute()
     {
         var xmlPath = HelperFuncs.GetTablePath(_basePath, _tableName);
-        Console.WriteLine($"Executing query on table: {xmlPath}");
+        // Console.WriteLine($"Executing query on table: {xmlPath}");
 
         if (!File.Exists(xmlPath))
         {
@@ -75,7 +75,6 @@ public class XmlQueryBuilder<T> where T : Entity
         foreach (var element in doc!.Root!.Elements("Entity"))
         {
             var entityElement = HelperFuncs.XmlToEntity<T>(element);
-            Console.WriteLine($"entityElement: {entityElement}");
             bool matchesAllConditions = true;
             foreach (var condition in _conditions)
             {
@@ -260,22 +259,27 @@ public class XmlQueryBuilder<T> where T : Entity
         var entityKeyValue = HelperFuncs.GetKeyProperty(typeof(T))
             .GetValue(entityElement.Entity)?.ToString();
 
-        var relatedKeys = new List<string>();
+        // Create the correct list type
+        var listType = typeof(List<>).MakeGenericType(relAttr.RelatedType);
+        var relatedEntities = (System.Collections.IList)Activator.CreateInstance(listType, 0);
+
+        // Find relationships where this entity appears under its type name
         foreach (var rel in doc.Root.Elements("Relationship"))
         {
-            if (rel.Element("ParentKey")?.Value == entityKeyValue)
+            if (rel.Element(typeof(T).Name)?.Value == entityKeyValue)
             {
-                var relatedKey = rel.Element("RelatedKey")?.Value;
+                var relatedKey = rel.Element(relAttr.RelatedType.Name)?.Value;
                 if (relatedKey != null)
                 {
-                    //console.WriteLine($"relatedKey: {relatedKey}");
-                    relatedKeys.Add(relatedKey);
+                    var relatedEntity = HelperFuncs.LoadEntityByKey(relAttr.RelatedType, relatedKey);
+                    if (relatedEntity != null)
+                    {
+                        relatedEntities.Add(relatedEntity);
+                    }
                 }
             }
         }
 
-        var relatedEntities = LoadEntitiesByKeys(relAttr.RelatedType, relatedKeys);
-        //console.WriteLine($"relatedEntities: {relatedEntities}");
         prop.SetValue(entityElement.Entity, relatedEntities);
     }
 
@@ -333,7 +337,7 @@ public class XmlQueryBuilder<T> where T : Entity
         prop.SetValue(entityElement.Entity, relatedEntities);       
     }
 
-    private ICollection<object> LoadEntitiesByKeys(Type entityType, IEnumerable<string> keys)
+    private List<object> LoadEntitiesByKeys(Type entityType, List<string> keys)
     {
         var entities = new List<object>();
         var xmlPath = HelperFuncs.GetTablePath(_basePath, entityType.Name);
@@ -347,20 +351,8 @@ public class XmlQueryBuilder<T> where T : Entity
             var elementKey = element.Element(keyProp.Name)?.Value;
             if (elementKey != null && keys.Contains(elementKey))
             {
-                var entity = Activator.CreateInstance(entityType);
-                // Set properties from XML
-                foreach (var prop in entityType.GetProperties())
-                {
-                    if (prop.GetCustomAttribute<ColumnAttribute>() != null || 
-                        prop.GetCustomAttribute<KeyAttribute>() != null)
-                    {
-                        var value = element.Element(prop.Name)?.Value;
-                        if (value != null)
-                        {
-                            prop.SetValue(entity, Convert.ChangeType(value, prop.PropertyType));
-                        }
-                    }
-                }
+                var entity = HelperFuncs.XmlToEntity(element, entityType);
+                Console.WriteLine($"entity: {entity.GetType().Name},");
                 entities.Add(entity);
             }
         }
@@ -400,6 +392,8 @@ public class XmlQueryBuilder<T> where T : Entity
         }
         return entities;
     }
+
+    
 }
 
 public class QueryCondition

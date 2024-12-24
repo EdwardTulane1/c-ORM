@@ -56,11 +56,15 @@ namespace MyORM.Tests
             _context.Cars.Add(car);
             _context.SaveChanges();
 
+            var carQuery = _context.Query<Car>();
+
+            var deletedCar1 = carQuery.Where("Id", "=", "401").Execute().FirstOrDefault();
+            Console.WriteLine($"Deleted car 1: {deletedCar1?.Name}");
+
             _context.Manufacturers.Remove(manufacturer);
             _context.SaveChanges();
 
             // Verify both manufacturer and car are deleted
-            var carQuery = _context.Query<Car>();
             var deletedCar = carQuery.Where("Id", "=", "401").Execute().FirstOrDefault();
             Console.WriteLine($"Cascade deleted car found: {(deletedCar == null ? "No" : "Yes")}");
         }

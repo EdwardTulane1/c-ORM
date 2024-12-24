@@ -68,3 +68,11 @@ TODO:
 - implement one to one relation
 - when deleting enitity for each of its related entites convert to real entity and delete it
 - on delete bahaviour is on the deleted side. not on the related side. makes sense for easier access
+- the storage path must be same all over
+- the one to one has to be implemented
+- in mamy to many how we know whos parent and whos related?
+
+
+what is doesnt do: 0 thoguht about performance. 
+really
+like none

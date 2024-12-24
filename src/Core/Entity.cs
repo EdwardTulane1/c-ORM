@@ -53,6 +53,7 @@ namespace MyORM.Core
          */
         internal bool HasChanges()
         {
+            // Console.WriteLine($"HasChanges: {IsNew}, {IsDeleted}, {IsModified}");
             if (IsNew || IsDeleted) return true;
             
             var properties = GetType().GetProperties()
@@ -65,6 +66,7 @@ namespace MyORM.Core
                 if (!OriginalValues.ContainsKey(prop.Name) || 
                     !Equals(OriginalValues[prop.Name], currentValue))
                 {
+                    // Console.WriteLine($"HasChanges: {prop.Name} is modified");
 
                     IsModified = true;
                     return true;

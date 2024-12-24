@@ -4,6 +4,7 @@ using System;
 using System.Linq;
 using System.IO;
 
+// working!
 namespace MyORM.Tests
 {
     public class Test1_BasicCRUD
@@ -37,7 +38,6 @@ namespace MyORM.Tests
             var manufacturer = new Manufacturer { Id = 201, Name = "Test Manufacturer" };
             _context.Manufacturers.Add(manufacturer);
             _context.SaveChanges();
-            Console.WriteLine($"Added manufacturer: {manufacturer.Name} isnew: {manufacturer.IsNew}");
 
 
             // Test entity with relationship creation
@@ -79,12 +79,8 @@ namespace MyORM.Tests
             
             if (manufacturer != null)
             {
-                Console.WriteLine($"Updating manufacturer: {manufacturer.Name} is new: {manufacturer.IsNew}. ismodified: {manufacturer.IsModified}");
                 manufacturer.Name = "Updated Manufacturer";
-                _context.SaveChanges();
-
-                Console.WriteLine($"After update: {manufacturer.Name} is new: {manufacturer.IsNew}. ismodified: {manufacturer.IsModified}");
-                
+                _context.SaveChanges();                
                 // Verify update
                 var updated = query.Where("Id", "=", "201").Execute().FirstOrDefault();
                 Console.WriteLine($"Updated name: {updated?.Name}");

@@ -73,7 +73,7 @@ namespace MyORM.Core
                 }
             }
             else{
-                Console.WriteLine($"Entity already tracked: {entity.GetType().Name}");
+                // Console.WriteLine($"Entity already tracked: {entity.GetType().Name}");
             }
         }
         
@@ -103,7 +103,7 @@ namespace MyORM.Core
                         trackMethod = relatedDbSet.GetType().GetMethod("TrackEntity");
                         foreach (var relatedEntity in collection)
                         {
-                            Console.WriteLine($"relatedEntity called for: {relatedEntity.GetType().Name}. realyeddb: {relatedDbSet.GetType().Name}, trackm: {trackMethod?.Name}");
+                            // Console.WriteLine($"relatedEntity called for: {relatedEntity.GetType().Name}. realyeddb: {relatedDbSet.GetType().Name}, trackm: {trackMethod?.Name}");
                             trackMethod?.Invoke(relatedDbSet, new[] { relatedEntity , true});
                         }
                     }
