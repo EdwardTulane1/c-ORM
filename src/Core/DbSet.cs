@@ -67,7 +67,7 @@ namespace MyORM.Core
                     foreach (var property in entity.GetType().GetProperties())
                     {
                         var relationshipAttribute = property.GetCustomAttribute<RelationshipAttribute>();
-                        if(relationshipAttribute == null) continue;
+                        if(relationshipAttribute == null || property.GetValue(entity) == null) continue;
                         TrackEntityB(property, relationshipAttribute, entity);
                     }
                 }
