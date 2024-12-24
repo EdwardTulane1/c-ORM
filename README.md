@@ -67,3 +67,4 @@ I've used linq just to connect and read objects from the xml
 TODO: 
 - implement one to one relation
 - when deleting enitity for each of its related entites convert to real entity and delete it
+- on delete bahaviour is on the deleted side. not on the related side. makes sense for easier access

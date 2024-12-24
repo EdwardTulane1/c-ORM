@@ -75,7 +75,7 @@ namespace MyORM.Core
             // Find existing entity or add new one
             var keyProp = HelperFuncs.GetKeyProperty(actualType); // the key property of the entity (not the value of it)
 
-            Console.WriteLine($"Type: {actualType.Name}, Key property: {keyProp?.Name}, IsModified: {entity.IsModified}, IsNew: {entity.IsNew}, value: {keyProp.GetValue(entity)?.ToString()}");
+            //console.WriteLine($"Type: {actualType.Name}, Key property: {keyProp?.Name}, IsModified: {entity.IsModified}, IsNew: {entity.IsNew}, value: {keyProp.GetValue(entity)?.ToString()}");
 
 
             if (keyProp != null && entity.IsModified) // the modified has to be anough but we double check the key. if a user created a new with the same key its a bug!!
@@ -86,12 +86,12 @@ namespace MyORM.Core
 
                 if (existingEntity != null)
                 {
-                    Console.WriteLine($"Replacing existing entity with key {keyValue}");
+                    //console.WriteLine($"Replacing existing entity with key {keyValue}");
                     existingEntity.ReplaceWith(entityElement);
                 }
                 else
                 {
-                    Console.WriteLine($"Adding new entity with key {keyValue}");
+                    //console.WriteLine($"Adding new entity with key {keyValue}");
                     root.Add(entityElement);
                 }
             }
@@ -101,7 +101,7 @@ namespace MyORM.Core
             }
 
             doc.Save(xmlPath);
-            Console.WriteLine($"Saved to {xmlPath}");
+            //console.WriteLine($"Saved to {xmlPath}");
         }
 
         /*
@@ -125,7 +125,7 @@ namespace MyORM.Core
                 var keyValue = keyProp.GetValue(entity)?.ToString();
 
                 // Handle relationships before deleting the entity
-                Console.WriteLine($"Deleting entity: {entity.GetType().Name} with key {keyValue}");
+                //console.WriteLine($"Deleting entity: {entity.GetType().Name} with key {keyValue}");
                 HandleEntityDeletion(entity, keyValue);
 
                 // Delete the entity itself
@@ -182,7 +182,7 @@ namespace MyORM.Core
             {
                 // get the relationship attribute of each of them
                 var relAttr = prop.GetCustomAttribute<RelationshipAttribute>();
-                Console.WriteLine($"Handling relationship: {prop.Name} {relAttr.Type}, From: {relAttr.RelatedType} To: {relAttr.Type}");
+                //console.WriteLine($"Handling relationship: {prop.Name} {relAttr.Type}, From: {relAttr.RelatedType} To: {relAttr.Type}");
 
                 switch (relAttr?.Type)
                 {
@@ -195,7 +195,7 @@ namespace MyORM.Core
                         if (collection != null && collection.Any())
                         {
                             var mappingFileName = HelperFuncs.getFileNameAlphaBetic(entityType.Name, relAttr.RelatedType.Name);
-                            Console.WriteLine($"Saving many-to-many relationship to: {mappingFileName}");
+                            //console.WriteLine($"Saving many-to-many relationship to: {mappingFileName}");
                             SaveRelationshipMapping(entity, collection, mappingFileName);
                         }
                         break;
@@ -204,9 +204,9 @@ namespace MyORM.Core
                         // Store the foreign key value
                         // get key attribute of the related entity
                         var foreignKeyProp = HelperFuncs.GetKeyProperty(relAttr.RelatedType);
-                        Console.WriteLine($"foreign entity type: {relAttr.RelatedType.Name}");
-                        Console.WriteLine($"Foreign key property: {foreignKeyProp.Name}");
-                        Console.WriteLine($"Foreign key value: {foreignKeyProp.GetValue(prop.GetValue(entity))?.ToString()}");
+                        //console.WriteLine($"foreign entity type: {relAttr.RelatedType.Name}");
+                        //console.WriteLine($"Foreign key property: {foreignKeyProp.Name}");
+                        //console.WriteLine($"Foreign key value: {foreignKeyProp.GetValue(prop.GetValue(entity))?.ToString()}");
 
                         if (foreignKeyProp != null)
                         {
@@ -218,7 +218,7 @@ namespace MyORM.Core
                             var isDeleted = HelperFuncs.IsEntityDeleted(relAttr.RelatedType, foreignKeyValue);
                             if (isDeleted)
                             {
-                                Console.WriteLine($"Related entity {relAttr.RelatedType.Name} with key {foreignKeyValue} was deleted");
+                                //console.WriteLine($"Related entity {relAttr.RelatedType.Name} with key {foreignKeyValue} was deleted");
                                 // check for onDelete behavior
                                 switch (relAttr.OnDelete)
                                 {
@@ -261,21 +261,21 @@ namespace MyORM.Core
             {
                 // The mapping is always to the key in the related entity
                 var parentType = parentEntity.GetType();
-                Console.WriteLine($"Saving many-to-many relationships for {parentType.Name}");
+                //console.WriteLine($"Saving many-to-many relationships for {parentType.Name}");
 
                 var filePath = Path.Combine(_basePath, relationshipFile);
-                Console.WriteLine($"Relationship file path: {filePath}");
+                //console.WriteLine($"Relationship file path: {filePath}");
 
                 XDocument doc;
                 if (File.Exists(filePath))
                 {
                     doc = XDocument.Load(filePath);
-                    Console.WriteLine("Loaded existing relationship file");
+                    //console.WriteLine("Loaded existing relationship file");
                 }
                 else
                 {
                     doc = new XDocument(new XElement("Relationships"));
-                    Console.WriteLine("Created new relationship file");
+                    //console.WriteLine("Created new relationship file");
                 }
 
                 var rootElement = doc.Root;
@@ -289,7 +289,7 @@ namespace MyORM.Core
                 }
 
                 var parentKeyValue = parentKeyProp.GetValue(parentEntity)?.ToString();
-                Console.WriteLine($"Parent key value: {parentKeyValue}");
+                //console.WriteLine($"Parent key value: {parentKeyValue}");
 
                 // Remove existing relationships for this parent
                 var existingRelationships = rootElement.Elements("Relationship")
@@ -308,12 +308,12 @@ namespace MyORM.Core
                     var relatedKeyProp = HelperFuncs.GetKeyProperty(relatedType);
                     if (relatedKeyProp == null)
                     {
-                        Console.WriteLine($"No key property found for related entity {relatedType.Name}");
+                        //console.WriteLine($"No key property found for related entity {relatedType.Name}");
                         continue;
                     }
 
                     var relatedKeyValue = relatedKeyProp.GetValue(relatedEntity)?.ToString();
-                    Console.WriteLine($"Adding relationship: Parent {parentKeyValue} -> Related {relatedKeyValue}");
+                    //console.WriteLine($"Adding relationship: Parent {parentKeyValue} -> Related {relatedKeyValue}");
 
                     var relationshipElement = new XElement("Relationship",
                         new XElement("ParentKey", parentKeyValue),
@@ -326,12 +326,12 @@ namespace MyORM.Core
                 }
 
                 doc.Save(filePath);
-                Console.WriteLine($"Saved relationships to {filePath}");
+                //console.WriteLine($"Saved relationships to {filePath}");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error saving many-to-many relationships: {ex.Message}");
-                Console.WriteLine(ex.StackTrace);
+                //console.WriteLine($"Error saving many-to-many relationships: {ex.Message}");
+                //console.WriteLine(ex.StackTrace);
             }
         }
 
@@ -350,7 +350,7 @@ namespace MyORM.Core
             foreach (var prop in relationshipProps)
             {
                 var relAttr = prop.GetCustomAttribute<RelationshipAttribute>();
-                Console.WriteLine($"Handling deletion of relationship: {prop.Name} {relAttr.Type}");
+                //console.WriteLine($"Handling deletion of relationship: {prop.Name} {relAttr.Type}");
 
                 switch (relAttr?.Type)
                 {
@@ -382,7 +382,7 @@ namespace MyORM.Core
         private void DeleteManyToManyRelationships(Type parentType, Type relatedType, string parentKeyValue)
         {
             var mappingFileName = HelperFuncs.getFileNameAlphaBetic(parentType.Name, relatedType.Name);
-            Console.WriteLine($"Deleting many-to-many relationships for {parentType.Name} and {relatedType.Name}");
+            //console.WriteLine($"Deleting many-to-many relationships for {parentType.Name} and {relatedType.Name}");
             var filePath = Path.Combine(_basePath, mappingFileName);
 
             if (!File.Exists(filePath)) return;
@@ -473,7 +473,7 @@ namespace MyORM.Core
                 if (foreignKeyProp != null && foreignKeyElement != null)
                 {
                     // check onDelete behavior
-                    Console.WriteLine($"onDelete behavior: {relAttr.OnDelete}, attirbute to delete: {foreignKeyElement.Value}");
+                    //console.WriteLine($"onDelete behavior: {relAttr.OnDelete}, attirbute to delete: {foreignKeyElement.Value}");
                     switch (relAttr.OnDelete)
                     {
                         case DeleteBehavior.SetNull:
@@ -481,7 +481,7 @@ namespace MyORM.Core
                             break;
                         case DeleteBehavior.Cascade:
                             // GET TYPE OF ENTITY AND DELETE IT PROPERLY - BIG TODO
-                            Console.WriteLine($"deleting entity: {relatedEntity.GetType().Name}, ");
+                            //console.WriteLine($"deleting entity: {relatedEntity.GetType().Name}, ");
                             relatedEntityXML.Remove(); // but what with its relations???
                             break;
                         case DeleteBehavior.Restrict:

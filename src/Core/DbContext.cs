@@ -92,12 +92,12 @@ namespace MyORM.Core
             // First handle deletions in reverse order ( the entites you depends on will be updated first)
             foreach (var entityType in sortedEntityTypes.AsEnumerable().Reverse())
             {
-                Console.WriteLine($"Saving entities of type: {entityType.Name}");
+                //console.WriteLine($"1. Saving entities of type: {entityType.Name}");
                 var dbSetProperty = GetType().GetProperties()
-                    .First(p => p.PropertyType == typeof(DbSet<>).MakeGenericType(entityType));
+                   .First(p => p.PropertyType == typeof(DbSet<>).MakeGenericType(entityType));
                 var dbSet = dbSetProperty.GetValue(this);
-                Console.WriteLine($"DbSet property: {dbSetProperty.Name}");
-                
+                //console.WriteLine($"2. DbSet property: {dbSetProperty.Name}");
+
                 var entities = ((IEnumerable<Entity>)dbSet
                     .GetType()
                     .GetField("_entities", BindingFlags.NonPublic | BindingFlags.Instance)
@@ -106,15 +106,16 @@ namespace MyORM.Core
 
                 foreach (var entity in entities)
                 {
+                    //console.WriteLine($"3. entity: {entity.GetType().Name}, {entity.IsDeleted}, {entity.IsNew}, {entity.IsModified}");
                     if (entity.IsDeleted)
                     {
-                        Console.WriteLine($"Deleting entity: {entity.GetType().Name}");
+                        //console.WriteLine($"4. Deleting entity: {entity.GetType().Name}");
                         HelperFuncs.TrackDeletedEntity(entity);
                         _storageProvider.DeleteEntity(entity, entityType.Name);
                     }
-                    else if(entity.HasChanges())
+                    else if (entity.HasChanges())
                     {
-                        Console.WriteLine($"Saving entity: {entity.GetType().Name}, modified: {entity.IsModified}, new: {entity.IsNew}");
+                        //console.WriteLine($"5. Saving entity: {entity.GetType().Name}, modified: {entity.IsModified}, new: {entity.IsNew}");
                         ValidationHelper.ValidateEntity(entity);
                         _storageProvider.SaveEntity(entity, entityType.Name);
                         entity.IsNew = false;
@@ -144,7 +145,7 @@ namespace MyORM.Core
                 foreach (var prop in relationshipProps)
                 {
                     var relAttr = prop.GetCustomAttribute<RelationshipAttribute>();
-                    if(relAttr == null) continue;
+                    if (relAttr == null) continue;
                     switch (relAttr.Type)
                     {
                         case RelationType.OneToMany:
@@ -165,10 +166,24 @@ namespace MyORM.Core
             return graph;
         }
 
-        
+
         public void Dispose()
         {
             // TODO: ... 
         }
+
+        protected DbSet<T> GetDbSet<T>() where T : Entity
+        {
+            var dbSet = GetType().GetProperties()
+                .First(p => p.PropertyType == typeof(DbSet<>).MakeGenericType(typeof(T)));
+            return (DbSet<T>)dbSet.GetValue(this);
+        }
+
+        public XmlQueryBuilder<T> Query<T>() where T : Entity
+        {
+            var dbSet = GetDbSet<T>();
+            return new XmlQueryBuilder<T>(_xmlBasePath, typeof(T).Name, dbSet);
+        }
     }
 }
+

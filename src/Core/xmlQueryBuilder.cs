@@ -16,11 +16,12 @@ public class XmlQueryBuilder<T> where T : Entity
     private int? _skip = null;
     private readonly string _basePath;
     private readonly string _tableName;
-
-    public XmlQueryBuilder(string basePath, string tableName)
+    private readonly DbSet<T> _dbSet;
+    public XmlQueryBuilder(string basePath, string tableName, DbSet<T> dbSet)
     {
         _basePath = basePath;
         _tableName = tableName;
+        _dbSet = dbSet;
     }
 
     public record EntityPlusXml<TEntity>(TEntity Entity, XElement xmlElement);
@@ -59,6 +60,8 @@ public class XmlQueryBuilder<T> where T : Entity
     public List<T> Execute()
     {
         var xmlPath = HelperFuncs.GetTablePath(_basePath, _tableName);
+        Console.WriteLine($"Executing query on table: {xmlPath}");
+
         if (!File.Exists(xmlPath))
         {
             Console.WriteLine($"zzzz file not found");
@@ -72,6 +75,7 @@ public class XmlQueryBuilder<T> where T : Entity
         foreach (var element in doc!.Root!.Elements("Entity"))
         {
             var entityElement = HelperFuncs.XmlToEntity<T>(element);
+            Console.WriteLine($"entityElement: {entityElement}");
             bool matchesAllConditions = true;
             foreach (var condition in _conditions)
             {
@@ -100,11 +104,11 @@ public class XmlQueryBuilder<T> where T : Entity
         var entities = new List<T>();
         foreach (var element in finalResults)
         {
-            // BIG TODO: check if needed
-            element.Entity.IsDeleted = false;
-            element.Entity.IsModified = false;
-            element.Entity.IsNew = false;
             entities.Add(LoadRelatedEntities(element));
+
+
+            // IN HERE  BIG TODO: I HAVE TO ATTACH TRACKER TO THE ENTITY AND THE RELATED ENTITIES
+            _dbSet.TrackEntity(element.Entity);
         }
 
         return entities;
@@ -264,14 +268,14 @@ public class XmlQueryBuilder<T> where T : Entity
                 var relatedKey = rel.Element("RelatedKey")?.Value;
                 if (relatedKey != null)
                 {
-                    Console.WriteLine($"relatedKey: {relatedKey}");
+                    //console.WriteLine($"relatedKey: {relatedKey}");
                     relatedKeys.Add(relatedKey);
                 }
             }
         }
 
         var relatedEntities = LoadEntitiesByKeys(relAttr.RelatedType, relatedKeys);
-        Console.WriteLine($"relatedEntities: {relatedEntities}");
+        //console.WriteLine($"relatedEntities: {relatedEntities}");
         prop.SetValue(entityElement.Entity, relatedEntities);
     }
 
@@ -283,12 +287,12 @@ public class XmlQueryBuilder<T> where T : Entity
 
         var foreignKeyValue = entityElement.xmlElement.Element(foreignKeyProp)?.Value;
 
-        Console.WriteLine($"foreignKeyProp: {foreignKeyProp}, foreignKeyValue: {foreignKeyValue}");
+        //console.WriteLine($"foreignKeyProp: {foreignKeyProp}, foreignKeyValue: {foreignKeyValue}");
         if (foreignKeyValue != null)
         {
-            Console.WriteLine($"foreignKeyValue: {foreignKeyValue}");
+            //console.WriteLine($"foreignKeyValue: {foreignKeyValue}");
             var relatedEntity = HelperFuncs.LoadEntityByKey(relAttr.RelatedType, foreignKeyValue);
-            Console.WriteLine($"relatedEntity: {relatedEntity}");
+            //console.WriteLine($"relatedEntity: {relatedEntity}");
             prop.SetValue(entityElement.Entity, relatedEntity);
         }
     }
@@ -319,13 +323,13 @@ public class XmlQueryBuilder<T> where T : Entity
             if (elementKey != null && elementKey == entityKeyValue)
             {
                 // var zz = HelperFuncs.XmlToEntity(element, relAttr.RelatedType);
-                // Console.WriteLine($"zz: {zz}");
+                // //console.WriteLine($"zz: {zz}");
                 relatedEntities.Add(HelperFuncs.XmlToEntity(element, relAttr.RelatedType));
             }
             
         }
 
-        Console.WriteLine($" Prop name: {prop.Name}, relatedEntities: {relatedEntities}");
+        //console.WriteLine($" Prop name: {prop.Name}, relatedEntities: {relatedEntities}");
         prop.SetValue(entityElement.Entity, relatedEntities);       
     }
 

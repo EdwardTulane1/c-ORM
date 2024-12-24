@@ -70,7 +70,7 @@ namespace MyORM.Core
                     return true;
                 }
             }
-            Console.WriteLine("No changes");
+            //console.WriteLine("No changes");
             return false;
         }
     }

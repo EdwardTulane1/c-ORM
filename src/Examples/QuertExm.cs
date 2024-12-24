@@ -35,21 +35,9 @@ namespace MyORM.Examples
         public virtual Manufacturer Manufacturer { get; set; }
     }
 
-    public class CarQuery : XmlQueryBuilder<Car>
-    {
-        public CarQuery() : base(carsExm.XmlStoragePath, "Car")
-        {
-            Console.WriteLine($"XML files will be stored in: {carsExm.XmlStoragePath}");
-        }
-    }
+  
 
-    public class ManufacturerQuery : XmlQueryBuilder<Manufacturer>
-    {
-        public ManufacturerQuery() : base(carsExm.XmlStoragePath, "Manufacturer")
-        {
-            Console.WriteLine($"XML files will be stored in: {carsExm.XmlStoragePath}");
-        }
-    }
+
 
     public class carsExm : DbContext
     {
@@ -95,36 +83,7 @@ namespace MyORM.Examples
             carsExm.SaveChanges();
         }
 
-        public void RunQueryExamples()
-        {
-            var queryBuilder = new CarQuery();
-            var manufacturerQuery = new ManufacturerQuery();
-            // Query examples with relationships
-            Console.WriteLine("Cars by BMW:");
-            var bmwCars = queryBuilder
-                .Where("Name", "=", "BMW 3 Series")
-                .Execute();
-
-            foreach (var car in bmwCars)
-            {
-                Console.WriteLine(car.ToString());
-                Console.WriteLine($"- {car.Name}: ${car.Price}. p: {car.Price} {car.Manufacturer.Name}");
-            }
-
-            var manufacturers = manufacturerQuery.Execute();
-            foreach (var manufacturer in manufacturers)
-            {
-                Console.WriteLine(manufacturer.Name);
-                foreach (var car in manufacturer.Cars)
-                {
-                    Console.WriteLine($" - {car.Name}: ${car.Price}");
-                }
-            }
-
-            // Get all manufacturers and their cars
-            Console.WriteLine("\nManufacturers and their cars:");
-           
-        }
+      
     }
 }
 

@@ -1,35 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Entities>
   <Entity>
-    <Id>101</Id>
-    <Name>Volkswagen Group</Name>
-  </Entity>
-  <Entity>
-    <Id>102</Id>
-    <Name>BMW Group</Name>
-  </Entity>
-  <Entity>
-    <Id>103</Id>
-    <Name>Daimler AG</Name>
-  </Entity>
-  <Entity>
-    <Id>104</Id>
-    <Name>Toyota Motor Corp</Name>
-  </Entity>
-  <Entity>
-    <Id>101</Id>
-    <Name>Volkswagen Group</Name>
-  </Entity>
-  <Entity>
-    <Id>102</Id>
-    <Name>BMW Group</Name>
-  </Entity>
-  <Entity>
-    <Id>103</Id>
-    <Name>Daimler AG</Name>
-  </Entity>
-  <Entity>
-    <Id>104</Id>
-    <Name>Toyota Motor Corp</Name>
+    <Id>201</Id>
+    <Name>Test Manufacturer</Name>
   </Entity>
 </Entities>

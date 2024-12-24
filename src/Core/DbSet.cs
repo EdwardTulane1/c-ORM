@@ -5,6 +5,9 @@
  */
 
 
+using System.Reflection;
+using MyORM.Attributes;
+
 namespace MyORM.Core
 {
     public class DbSet<T> where T : Entity
@@ -31,7 +34,7 @@ namespace MyORM.Core
         {
             _entities.Add(entity);
             entity.IsNew = true;
-            entity.TakeSnapshot();  
+            entity.TakeSnapshot();
         }
 
         /*
@@ -42,11 +45,71 @@ namespace MyORM.Core
         public void Remove(T entity)
         {
             // _entities.Remove(entity)
-            if(!_entities.Contains(entity)){
+            if (!_entities.Contains(entity))
+            {
                 _entities.Add(entity);
             }
-            Console.WriteLine($"removing {entity.GetType().Name},");
+            //console.WriteLine($"removing {entity.GetType().Name},");
             entity.IsDeleted = true;
+        }
+
+        public void TrackEntity(T entity, bool isNested = false)
+        {
+            if (!_entities.Contains(entity))
+            {
+                entity.TakeSnapshot();
+                _entities.Add(entity);
+                entity.IsNew = false;
+                entity.IsModified = false;
+                entity.IsDeleted = false;
+                if(!isNested)
+                {
+                    foreach (var property in entity.GetType().GetProperties())
+                    {
+                        var relationshipAttribute = property.GetCustomAttribute<RelationshipAttribute>();
+                        if(relationshipAttribute == null) continue;
+                        TrackEntityB(property, relationshipAttribute, entity);
+                    }
+                }
+            }
+            else{
+                Console.WriteLine($"Entity already tracked: {entity.GetType().Name}");
+            }
+        }
+        
+        public void TrackEntityB(PropertyInfo propertyInfo, RelationshipAttribute property, Entity entity)
+        {
+            var value = propertyInfo.GetValue(entity);
+            var relatedDbSet = _context.GetType().GetProperties()
+                .FirstOrDefault(p => p.PropertyType == typeof(DbSet<>).MakeGenericType(property.RelatedType))
+                ?.GetValue(_context);
+
+            if (relatedDbSet == null)
+            {
+                return;
+            }
+            switch (property.Type)
+            {
+                case RelationType.OneToOne:
+                case RelationType.ManyToOne:
+                    var trackMethod = relatedDbSet.GetType().GetMethod("TrackEntity");
+                    trackMethod?.Invoke(relatedDbSet, new[] { value, true });
+                    break;
+                case RelationType.OneToMany:
+                case RelationType.ManyToMany:
+                    var collection = value as IEnumerable<object>;
+                    if (collection != null)
+                    {
+                        trackMethod = relatedDbSet.GetType().GetMethod("TrackEntity");
+                        foreach (var relatedEntity in collection)
+                        {
+                            Console.WriteLine($"relatedEntity called for: {relatedEntity.GetType().Name}. realyeddb: {relatedDbSet.GetType().Name}, trackm: {trackMethod?.Name}");
+                            trackMethod?.Invoke(relatedDbSet, new[] { relatedEntity , true});
+                        }
+                    }
+                    break;
+
+            }
         }
 
         /*

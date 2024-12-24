@@ -13,7 +13,7 @@ namespace MyORM.Tests
         [Column("Name", false)]
         public string Name { get; set; }
 
-        [Relationship(RelationType.OneToMany, typeof(Car), onDelete: DeleteBehavior.SetNull)]
+        [Relationship(RelationType.OneToMany, typeof(Car), onDelete: DeleteBehavior.Cascade)]
         public virtual ICollection<Car> Cars { get; set; } = new List<Car>();
     }
 
@@ -34,21 +34,8 @@ namespace MyORM.Tests
         public virtual Manufacturer Manufacturer { get; set; }
     }
 
-    public class CarQuery : XmlQueryBuilder<Car>
-    {
-        public CarQuery() : base(Test1.XmlStoragePath, "Car")
-        {
-            Console.WriteLine($"XML files will be stored in: {Test1.XmlStoragePath}");
-        }
-    }
 
-    public class ManufacturerQuery : XmlQueryBuilder<Manufacturer>
-    {
-        public ManufacturerQuery() : base(Test1.XmlStoragePath, "Manufacturer")
-        {
-            Console.WriteLine($"XML files will be stored in: {Test1.XmlStoragePath}");
-        }
-    }
+
 
     public class Test1 : DbContext
     {
@@ -92,37 +79,50 @@ namespace MyORM.Tests
 
             test1.SaveChanges();
 
+
+         
+
         }
 
-        public void runQuery()
-        {
-            var queryBuilder = new CarQuery();
-            var manufacturerQuery = new ManufacturerQuery();
-            // Query examples with relationships
-            Console.WriteLine("Cars by BMW:");
-            var bmwCars = queryBuilder
-                .Where("Name", "=", "BMW 3 Series")
-                .Execute();
+        // public void runQuery()
+        // {
+        //     var test1 = new Test1();
+            
+        //     // Use the context's Query method instead of separate query builders
+        //     var bmwCars = test1.Query<Car>()
+        //         .Where("Name", "=", "BMW 3 Series")
+        //         .Execute();
 
-            foreach (var car in bmwCars)
-            {
-                Console.WriteLine(car.ToString());
-                Console.WriteLine($"- {car.Name}: ${car.Price}. p: {car.Price} {car.Manufacturer.Name}");
-            }
+        //     foreach (var car in bmwCars)
+        //     {
+        //         Console.WriteLine($"- {car.Name}: ${car.Price}. Manufacturer: {car.Manufacturer.Name}");
+        //     }
 
-            var manufacturers = manufacturerQuery.Execute();
-            foreach (var manufacturer in manufacturers)
-            {
-                Console.WriteLine(manufacturer.Name);
-                foreach (var car in manufacturer.Cars)
-                {
-                    Console.WriteLine($" - {car.Name}: ${car.Price}");
-                }
-            }
+        //     // Query manufacturers with their related cars
+        //     var manufacturers = test1.Query<Manufacturer>().Execute();
+        //     foreach (var manufacturer in manufacturers)
+        //     {
+        //         Console.WriteLine(manufacturer.Name);
+        //         foreach (var car in manufacturer.Cars)
+        //         {
+        //             Console.WriteLine($" - {car.Name}: ${car.Price}");
+        //         }
+        //     }
 
-            // Get all manufacturers and their cars
-            Console.WriteLine("\nManufacturers and their cars:");
-        }
+        //     // Example of querying and then modifying tracked entities
+        //     var volkswagen = test1.Query<Manufacturer>()
+        //         .Where("Name", "=", "Volkswagen Group")
+        //         .Execute()
+        //         .FirstOrDefault();
+
+        //     if (volkswagen != null)
+        //     {
+        //         Console.WriteLine($"Before delete: {volkswagen.Name}, {volkswagen.Id}");
+        //         test1.Manufacturers.Remove(volkswagen);
+        //         test1.SaveChanges();
+        //         Console.WriteLine("After delete");
+        //     }
+        // }
     }
 
 }
