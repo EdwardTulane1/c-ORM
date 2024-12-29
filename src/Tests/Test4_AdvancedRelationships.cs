@@ -93,10 +93,9 @@ namespace MyORM.Tests
                 // Verify students still exist but course is removed from their collections
                 var student = _context.Query<Student>()
                     .Where("Id", "=", "10")
-                    .Execute()
-                    .FirstOrDefault();
+                    .Execute();
 
-                Console.WriteLine($"Student courses after delete: {student?.Courses.Count ?? 0}");
+                Console.WriteLine($"Student courses after delete: {student?.Count ?? 0}");
             }
         }
 

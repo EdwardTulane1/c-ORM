@@ -8,12 +8,4 @@
     <Id>11</Id>
     <Name>Jane Smith</Name>
   </Entity>
-  <Entity>
-    <Id>10</Id>
-    <Name>John Doe</Name>
-  </Entity>
-  <Entity>
-    <Id>11</Id>
-    <Name>Jane Smith</Name>
-  </Entity>
 </Entities>

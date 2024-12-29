@@ -16,7 +16,7 @@ namespace MyORM.Tests
         [Column("Name", false)]
         public string Name { get; set; }
 
-        [Relationship(RelationType.ManyToMany, typeof(Course), onDelete: DeleteBehavior.SetNull) ]
+        [Relationship(RelationType.ManyToMany, typeof(Course), onDelete: DeleteBehavior.None)]
         public virtual ICollection<Course> Courses { get; set; } = new List<Course>();
 
         [Relationship(RelationType.OneToOne, typeof(StudentProfile), onDelete: DeleteBehavior.SetNull)]
@@ -33,7 +33,7 @@ namespace MyORM.Tests
         [Column("Name", false)]
         public string Name { get; set; }
 
-        [Relationship(RelationType.ManyToMany, typeof(Student))]
+        [Relationship(RelationType.ManyToMany, typeof(Student), onDelete: DeleteBehavior.None)]
         public virtual ICollection<Student> Students { get; set; } = new List<Student>();
     }
 

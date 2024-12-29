@@ -305,11 +305,20 @@ namespace MyORM.Core
                         break;
 
                     case RelationType.ManyToOne: // If I'm many to one then the relatuionship is saved on my side. Once I'm delted the relationship is deleted and all good
+                        break;
                     case RelationType.OneToOne: // TODO BIG TODO - 
-                        //HandleOneToOneDeletion(entity, relAttr, entityKeyValue);
+                        if(relAttr.OnDelete == DeleteBehavior.Orphan){
+                            break;
+                        }
+                        HandleOneToOneDeletion(entity, relAttr, entityKeyValue);
                         break;
                 }
             }
+        }
+
+        private void HandleOneToOneDeletion<T>(T entity, RelationshipAttribute relAttr, string entityKeyValue) where T : Entity
+        {
+            // TODO BIG TODO - 
         }
 
         /*
@@ -374,16 +383,13 @@ namespace MyORM.Core
                 // BIG TODO - check on delete behavior
                 switch (deleteBehavior)
                 {
-                    case DeleteBehavior.SetNull:
-                        prop.SetValue(relatedEntity, null);
-                        SaveEntity(relatedEntity, relatedAType.Name);
-                        break;
                     case DeleteBehavior.Cascade:
                         relatedEntity.IsDeleted = true;
                         HelperFuncs.TrackDeletedEntity(relatedEntity);
                         DeleteEntity(relatedEntity, relatedAType.Name);
                         break;
                     case DeleteBehavior.Restrict:
+                    case DeleteBehavior.None:
                         break;
                 }
             }

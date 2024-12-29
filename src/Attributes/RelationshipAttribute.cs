@@ -33,7 +33,9 @@ namespace MyORM.Attributes
         Cascade,
         SetNull,
         Restrict,
-        Orphan
+        Orphan,
+
+        None
     }
 }
 
