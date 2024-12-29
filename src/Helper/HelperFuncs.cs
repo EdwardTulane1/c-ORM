@@ -36,6 +36,7 @@ namespace MyORM.Helper
             }
             _deletedEntities[entityType].Add(keyValue);
         }
+            
 
         public static string getFileNameAlphaBetic(string type1, string type2)
         {
@@ -106,5 +107,40 @@ namespace MyORM.Helper
             return null;
         }
 
+        public static XElement GetEntityByKey(XElement root, PropertyInfo keyProp, string keyValue)
+        {
+            return root.Elements("Entity")
+                .FirstOrDefault(e => e.Element(keyProp.Name)?.Value == keyValue);
+        }
+
+        public static IEnumerable<PropertyInfo> GetRelationshipProperties(Type type)
+        {
+            return type.GetProperties()
+                .Where(p => p.GetCustomAttribute<RelationshipAttribute>() != null);
+        }
+
+        public static string GetForeignKeyElementName(Type relatedType, PropertyInfo foreignKeyProp)
+        {
+            return $"{relatedType.Name}_{foreignKeyProp.Name}";
+        }
+
+        public static XDocument GetOrCreateXmlDocument(string filePath)
+    {
+        return File.Exists(filePath)
+            ? XDocument.Load(filePath)
+            : new XDocument(new XElement("Relationships"));
+    }
+
+    public static void SaveXmlDocument(XDocument doc, string filePath)
+    {
+        try
+        {
+            doc.Save(filePath);
+        }
+        catch (Exception ex)
+        {
+            throw new IOException($"Failed to save XML document to {filePath}", ex);
+        }
+    }
     }
 }

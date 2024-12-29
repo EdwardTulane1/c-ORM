@@ -32,7 +32,9 @@ namespace MyORM.Attributes
     {
         Cascade,
         SetNull,
-        Restrict
+        Restrict,
+        Orphan
     }
 }
+
 

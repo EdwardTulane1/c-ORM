@@ -20,7 +20,7 @@ namespace MyORM.Tests
             
             TestManyToManyCreate();
             TestManyToManyQuery();
-            // TestManyToManyDelete();
+            TestManyToManyDelete();
             // TestOneToOneCreate();
             // TestOneToOneQuery();
             // TestOneToOneDelete();
@@ -55,7 +55,7 @@ namespace MyORM.Tests
                 .Execute()
                 .FirstOrDefault();
 
-            Console.WriteLine($"Math course student count: {mathCourse?.Students.Count ?? 0}");
+            Console.WriteLine($"Math course student count: {mathCourse?.Students.Count ?? 0}. Course is : {mathCourse?.Name}");
         }
 
         private void TestManyToManyQuery()
@@ -86,11 +86,13 @@ namespace MyORM.Tests
             if (course != null)
             {
                 _context.Courses.Remove(course);
+                Console.WriteLine($"Removing course: {course.Name}");
                 _context.SaveChanges();
+                Console.WriteLine("Course removed");
 
                 // Verify students still exist but course is removed from their collections
                 var student = _context.Query<Student>()
-                    .Where("Id", "=", "101")
+                    .Where("Id", "=", "10")
                     .Execute()
                     .FirstOrDefault();
 
@@ -109,7 +111,7 @@ namespace MyORM.Tests
                 Email = "bob@example.com",
                 Student = student 
             };
-            student.Profile = profile;
+            // student.Profile = profile;
 
             _context.Students.Add(student);
             _context.StudentProfiles.Add(profile);
@@ -121,7 +123,7 @@ namespace MyORM.Tests
                 .Execute()
                 .FirstOrDefault();
 
-            Console.WriteLine($"Student profile email: {savedStudent?.Profile?.Email}");
+            // Console.WriteLine($"Student profile email: {savedStudent?.Profile?.Email}");
         }
 
         private void TestOneToOneQuery()
@@ -140,7 +142,7 @@ namespace MyORM.Tests
                 .FirstOrDefault();
 
             Console.WriteLine($"Profile -> Student name: {profile?.Student?.Name}");
-            Console.WriteLine($"Student -> Profile email: {student?.Profile?.Email}");
+            // Console.WriteLine($"Student -> Profile email: {student?.Profile?.Email}");
         }
 
         private void TestOneToOneDelete()

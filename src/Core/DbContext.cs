@@ -89,10 +89,10 @@ namespace MyORM.Core
             var graph = BuildDependencyGraph();
             var sortedEntityTypes = graph.GetSortedEntities();
 
-            // First handle deletions in reverse order ( the entites you depends on will be updated first)
+            // First handle deletions in reverse order ( the entites you depend on will be updated last, you 1st update the ones that depend on you)
             foreach (var entityType in sortedEntityTypes.AsEnumerable().Reverse())
             {
-                //console.WriteLine($"1. Saving entities of type: {entityType.Name}");
+                // Console.WriteLine($"1. handling entities of type: {entityType.Name}");
                 var dbSetProperty = GetType().GetProperties()
                    .First(p => p.PropertyType == typeof(DbSet<>).MakeGenericType(entityType));
                 var dbSet = dbSetProperty.GetValue(this);
@@ -109,8 +109,9 @@ namespace MyORM.Core
                   
                     if (entity.IsDeleted)
                     {
-                        //console.WriteLine($"4. Deleting entity: {entity.GetType().Name}");
+                        Console.WriteLine($"4. Deleting entity: {entity.GetType().Name}");
                         HelperFuncs.TrackDeletedEntity(entity);
+                        Console.WriteLine($"before delete: {entity.GetType().Name}");
                         _storageProvider.DeleteEntity(entity, entityType.Name);
                     }
                     else if (entity.HasChanges())
@@ -122,6 +123,7 @@ namespace MyORM.Core
                         entity.TakeSnapshot();
                     }
                 }
+                // TODO - delete orphans
                 HelperFuncs.ClearDeletedEntities();
             }
         }
@@ -143,21 +145,28 @@ namespace MyORM.Core
 
                 foreach (var prop in relationshipProps)
                 {
+                    // BIG TODO -  START!
                     var relAttr = prop.GetCustomAttribute<RelationshipAttribute>();
                     if (relAttr == null) continue;
                     switch (relAttr.Type)
                     {
                         case RelationType.OneToMany:
-                            // Add dependency from current entity to related entity
-                            graph.AddDependency(entityType, relAttr.RelatedType);
-                            break;
-                        case RelationType.OneToOne:
-                            break; // will alwaysw cause circular dependency
-                        case RelationType.ManyToOne:
-                            // Add dependency from related entity to current entity
+                            // They (many) depend on me
                             graph.AddDependency(relAttr.RelatedType, entityType);
                             break;
-                        case RelationType.ManyToMany:
+                        case RelationType.OneToOne:// if i get deleted they too - they depend on me
+                            if(relAttr.OnDelete == DeleteBehavior.Cascade || relAttr.OnDelete == DeleteBehavior.SetNull){ // One of the sides must be depend on another while the pther one doesnt
+                                graph.AddDependency(relAttr.RelatedType, entityType);
+                            }
+                            break; // will alwaysw cause circular dependency. will have hirarchy in here.
+                        case RelationType.ManyToOne: // i depend on them
+                            graph.AddDependency(entityType, relAttr.RelatedType);
+                            // Add dependency from related entity to current entity
+                            break;
+                        case RelationType.ManyToMany: // many to many - they depend on me
+                            if(relAttr.OnDelete == DeleteBehavior.Cascade){ // many to many dioesnt habve setnull. its a relation
+                                graph.AddDependency(relAttr.RelatedType, entityType);
+                            }
                             // For many-to-many, we don't add direct dependencies
                             break;
                     }

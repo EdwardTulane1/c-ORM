@@ -1,9 +1,0 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Entities>
-  <Entity>
-    <Id>201</Id>
-    <Name>Test Car</Name>
-    <Price>25000</Price>
-    <Manufacturer_Id>201</Manufacturer_Id>
-  </Entity>
-</Entities>

@@ -240,8 +240,11 @@ namespace MyORM.Attributes.Validation
             var keyProp = HelperFuncs.GetKeyProperty(entity.GetType());
             var keyValue = keyProp.GetValue(entity)?.ToString();
             var entityType = entity.GetType();
+            // Console.WriteLine($"entityType: {entityType.Name}, keyValue: {keyValue}. isNew: {((Entity)entity).IsNew}");
 
             // Check if entity is new and key already exists
+            // BIG TODO - the IsNew is always true. Has to check
+            // Console.WriteLine($"Validating key uniqueness for entity: {entity.GetType().Name}, key: {keyValue}, isNew: {((Entity)entity).IsNew}");
             if (((Entity)entity).IsNew)
             {
                 var xmlPath = HelperFuncs.GetTablePath(
@@ -270,7 +273,7 @@ namespace MyORM.Attributes.Validation
 
         public static void ValidateEntity(object entity)
         {
-            Console.WriteLine($"Validating entity of type {entity.GetType().Name}");
+            // Console.WriteLine($"Validating entity of type {entity.GetType().Name}");
             
             var results = new List<ValidationResult>();
 

@@ -7,22 +7,13 @@ namespace MyORM
     {
         static void Main(string[] args)
         {
-            //console.WriteLine("Starting ORM Tests...\n");
+            Console.WriteLine("Starting ORM Tests...\n");
 
-            // Run Basic CRUD Tests
-            var test1 = new Test1_BasicCRUD();
-            test1.RunAllTests();
+            // Run Advanced Relationship Tests
+            var test4 = new Test4_AdvancedRelationships();
+            test4.RunAllTests();
 
-            // Run Relationship Tests
-            // var test2 = new Test2_Relationships();
-            // test2.RunAllTests();
-
-            // // Run Query Tests
-            // var test3 = new Test3_Queries();
-            // test3.RunAllTests();
-
-            ////console.WriteLine("\nAll tests completed. Press any key to exit...");
-            //console.ReadKey();
+            Console.WriteLine("\nAll tests completed.");
         }
     }
 }

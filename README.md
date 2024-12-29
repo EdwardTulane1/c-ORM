@@ -76,3 +76,11 @@ TODO:
 what is doesnt do: 0 thoguht about performance. 
 really
 like none
+
+I can either do block for using new on existing id or let is set isModified to true. I think 1st approach is better.
+
+
+oneto one relation is saved only on one side. (makes sense, otherwise it wil be saved twice)
+
+
+delete orphans once in a while.

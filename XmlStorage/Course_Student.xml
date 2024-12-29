@@ -1,0 +1,7 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Entities>
+  <Relationship>
+    <Student>10</Student>
+    <Course>102</Course>
+  </Relationship>
+</Entities>

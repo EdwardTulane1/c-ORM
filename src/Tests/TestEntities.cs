@@ -16,10 +16,10 @@ namespace MyORM.Tests
         [Column("Name", false)]
         public string Name { get; set; }
 
-        [Relationship(RelationType.ManyToMany, typeof(Course))]
+        [Relationship(RelationType.ManyToMany, typeof(Course), onDelete: DeleteBehavior.SetNull) ]
         public virtual ICollection<Course> Courses { get; set; } = new List<Course>();
 
-        [Relationship(RelationType.OneToOne, typeof(StudentProfile))]
+        [Relationship(RelationType.OneToOne, typeof(StudentProfile), onDelete: DeleteBehavior.SetNull)]
         public virtual StudentProfile Profile { get; set; }
     }
 
@@ -47,7 +47,7 @@ namespace MyORM.Tests
         [Column("Email", false)]
         public string Email { get; set; }
 
-        [Relationship(RelationType.OneToOne, typeof(Student))]
+        [Relationship(RelationType.OneToOne, typeof(Student), onDelete: DeleteBehavior.Orphan)]
         public virtual Student Student { get; set; }
     }
 
