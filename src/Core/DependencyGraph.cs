@@ -41,11 +41,16 @@ public class DependencyGraph
         return sorted;
     }
 
-    private void TopologicalSort(Type current, HashSet<Type> visited, HashSet<Type> processing, List<Type> sorted)
+    private void TopologicalSort(Type current, HashSet<Type> visited, HashSet<Type> processing, List<Type> sorted, 
+        Stack<Type>? dependencyPath = null)
     {
+        dependencyPath ??= new Stack<Type>();
+        dependencyPath.Push(current);
+
         if (processing.Contains(current))
         {
-            throw new InvalidOperationException($"Circular dependency detected involving type {current.Name}");
+            var cycle = string.Join(" -> ", dependencyPath.Reverse().Select(t => t.Name));
+            throw new InvalidOperationException($"Circular dependency detected. Dependency cycle: {cycle}");
         }
 
         if (visited.Contains(current))
@@ -57,11 +62,12 @@ public class DependencyGraph
 
         foreach (var dependency in _nodes[current].Dependencies)
         {
-            TopologicalSort(dependency, visited, processing, sorted);
+            TopologicalSort(dependency, visited, processing, sorted, dependencyPath);
         }
 
         processing.Remove(current);
         visited.Add(current);
         sorted.Add(current);
+        dependencyPath.Pop();
     }
 }
