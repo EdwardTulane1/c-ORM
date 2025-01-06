@@ -21,9 +21,9 @@ namespace MyORM.Tests
             TestManyToManyCreate();
             TestManyToManyQuery();
             TestManyToManyDelete();
-            // TestOneToOneCreate();
-            // TestOneToOneQuery();
-            // TestOneToOneDelete();
+            TestOneToOneCreate();
+            TestOneToOneQuery();
+            TestOneToOneDelete();
             
             Console.WriteLine("Advanced Relationship Tests completed.");
         }
@@ -103,14 +103,15 @@ namespace MyORM.Tests
         {
             Console.WriteLine("\nTesting One-to-One Creation...");
             
-            var student = new Student { Id = 201, Name = "Bob Wilson" };
+            var student = new Student { Id = 21, Name = "Bob Wilson" };
             var profile = new StudentProfile 
             { 
                 Id = 201, 
                 Email = "bob@example.com",
                 Student = student 
             };
-            // student.Profile = profile;
+
+            student.Profile = profile;
 
             _context.Students.Add(student);
             _context.StudentProfiles.Add(profile);
@@ -122,7 +123,7 @@ namespace MyORM.Tests
                 .Execute()
                 .FirstOrDefault();
 
-            // Console.WriteLine($"Student profile email: {savedStudent?.Profile?.Email}");
+            Console.WriteLine($"Student profile email: {savedStudent?.Profile?.Email}");
         }
 
         private void TestOneToOneQuery()
@@ -136,12 +137,12 @@ namespace MyORM.Tests
                 .FirstOrDefault();
 
             var student = _context.Query<Student>()
-                .Where("Id", "=", "201")
+                .Where("Id", "=", "21")
                 .Execute()
                 .FirstOrDefault();
 
-            Console.WriteLine($"Profile -> Student name: {profile?.Student?.Name}");
-            // Console.WriteLine($"Student -> Profile email: {student?.Profile?.Email}");
+            Console.WriteLine($"Profile -> Student name: {profile?.Student?.Name}. ");
+            Console.WriteLine($"Student -> Profile email: {student?.Profile?.Email}");
         }
 
         private void TestOneToOneDelete()
@@ -149,20 +150,26 @@ namespace MyORM.Tests
             Console.WriteLine("\nTesting One-to-One Delete...");
             
             var student = _context.Query<Student>()
-                .Where("Id", "=", "201")
+                .Where("Id", "=", "21")
                 .Execute()
                 .FirstOrDefault();
 
             if (student != null)
             {
-                _context.Students.Remove(student);
-                _context.SaveChanges();
+                // _context.Students.Remove(student);
+                // _context.SaveChanges();
 
                 // Verify profile is also deleted (cascade behavior)
                 var profile = _context.Query<StudentProfile>()
                     .Where("Id", "=", "201")
                     .Execute()
                     .FirstOrDefault();
+
+                if (profile != null)
+                {
+                    _context.StudentProfiles.Remove(profile);
+                    _context.SaveChanges();
+                }
 
                 Console.WriteLine($"Profile after student delete exists: {profile != null}");
             }

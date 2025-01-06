@@ -54,7 +54,7 @@ namespace MyORM.Tests
             // Verify
             var query = _context.Query<Car>();
             var saved = query.Where("Id", "=", "201").Execute().FirstOrDefault();
-            Console.WriteLine($"Created manufacturer found: {saved?.Name ?? "Not found"}/ isnew: {saved?.IsNew}. isManufacturerNew: {saved?.Manufacturer?.IsNew}");
+            Console.WriteLine($"Created manufacturer found: {saved?.Name ?? "Not found"}/ isnew: {saved?.Manufacturer?.Name}. ");
         }
 
         private void TestRead()

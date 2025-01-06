@@ -92,7 +92,7 @@ namespace MyORM.Core
             // First handle deletions in reverse order ( the entites you depend on will be updated last, you 1st update the ones that depend on you)
             foreach (var entityType in sortedEntityTypes.AsEnumerable().Reverse())
             {
-                // Console.WriteLine($"1. handling entities of type: {entityType.Name}");
+                // Console.WriteLine($"dependency: {entityType.Name}");
                 var dbSetProperty = GetType().GetProperties()
                    .First(p => p.PropertyType == typeof(DbSet<>).MakeGenericType(entityType));
                 var dbSet = dbSetProperty.GetValue(this);
@@ -109,9 +109,9 @@ namespace MyORM.Core
                   
                     if (entity.IsDeleted)
                     {
-                        Console.WriteLine($"4. Deleting entity: {entity.GetType().Name}");
+                        // Console.WriteLine($"4. Deleting entity: {entity.GetType().Name}");
                         HelperFuncs.TrackDeletedEntity(entity);
-                        Console.WriteLine($"before delete: {entity.GetType().Name}");
+                        // Console.WriteLine($"before delete: {entity.GetType().Name}");
                         _storageProvider.DeleteEntity(entity, entityType.Name);
                     }
                     else if (entity.HasChanges())
@@ -124,6 +124,7 @@ namespace MyORM.Core
                     }
                 }
                 // TODO - delete orphans
+                // _storageProvider.DeleteOrphans();
                 HelperFuncs.ClearDeletedEntities();
             }
         }

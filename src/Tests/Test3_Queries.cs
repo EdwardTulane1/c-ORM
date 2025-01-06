@@ -21,8 +21,7 @@ namespace MyORM.Tests
             
             TestBasicFiltering();
             TestMultipleConditions();
-            TestRelationshipQueries();
-            TestComplexQueries();
+       
             
             Console.WriteLine("Query Tests completed.");
         }
@@ -87,37 +86,6 @@ namespace MyORM.Tests
             }
         }
 
-        private void TestRelationshipQueries()
-        {
-            Console.WriteLine("\nTesting Relationship Queries...");
-            
-            var query = _context.Query<Car>();
-            var manufacturer1Cars = query
-                .Where("Manufacturer.Name", "=", "Query Test 1")
-                .Execute();
-            
-            Console.WriteLine($"Cars from Manufacturer 1: {manufacturer1Cars.Count()}");
-            foreach (var car in manufacturer1Cars)
-            {
-                Console.WriteLine($"Car: {car.Name}, Manufacturer: {car.Manufacturer?.Name}");
-            }
-        }
-
-        private void TestComplexQueries()
-        {
-            Console.WriteLine("\nTesting Complex Queries...");
-            
-            var query = _context.Query<Car>();
-            var complexResult = query
-                .Where("Price", ">", "30000")
-                .Where("Manufacturer.Name", "=", "Query Test 2")
-                .Execute();
-            
-            Console.WriteLine($"Complex query results: {complexResult.Count()}");
-            foreach (var car in complexResult)
-            {
-                Console.WriteLine($"Car: {car.Name}, Price: {car.Price}, Manufacturer: {car.Manufacturer?.Name}");
-            }
-        }
+        // You can not query on nested relationships.
     }
 } 

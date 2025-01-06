@@ -30,7 +30,7 @@ namespace MyORM.Tests
         [Column("Price", false)]
         public int Price { get; set; }
 
-        [Relationship(RelationType.ManyToOne, typeof(Manufacturer))]
+        [Relationship(RelationType.ManyToOne, typeof(Manufacturer), onDelete:DeleteBehavior.None)]
         public virtual Manufacturer Manufacturer { get; set; }
     }
 

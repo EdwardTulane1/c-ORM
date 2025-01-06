@@ -116,7 +116,7 @@ namespace MyORM.Core
             if (keyValue != null)
             {
                 // Handle relationships before deleting the entity
-                Console.WriteLine($"Deleting entity: {entity.GetType().Name} with key {keyValue}");
+                // Console.WriteLine($"Deleting entity: {entity.GetType().Name} with key {keyValue}");
                 HandleEntityDeletion(entity, keyValue);
 
                 // Delete the entity itself
@@ -187,12 +187,13 @@ namespace MyORM.Core
                             SaveRelationshipMapping(entity, relatedEntities, mappingFileName);
                         }
                         break;
-                        
-                    case RelationType.OneToOne: // realtions In depend on
-                        if(relationshipAttribute.OnDelete != DeleteBehavior.Orphan){
-                            break; //means that I'm the orphan. I'm not going to save the relationship
+                    case RelationType.OneToOne: // relations In depend on
+                        if (relationshipAttribute.OnDelete != DeleteBehavior.Orphan)
+                        {
+                            // means that I'm the orphan. I'm not going to save the relationship
+                            continue;
                         }
-                        continue;
+                        goto case RelationType.ManyToOne;
 
                     case RelationType.ManyToOne:
 
@@ -454,7 +455,7 @@ namespace MyORM.Core
          */
         private void HandleOneToManyDeletion<T>(T entity, RelationshipAttribute relAttr, string parentKeyValue) where T : Entity
         {
-            Console.WriteLine($"Handling One to Many deletion");
+            // Console.WriteLine($"Handling One to Many deletion");
             // Get the XML file for the related entities
             var relatedTableName = relAttr.RelatedType.Name;
             var relatedXmlPath = Path.Combine(_basePath, $"{relatedTableName}.xml");

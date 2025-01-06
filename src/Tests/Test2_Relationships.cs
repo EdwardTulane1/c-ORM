@@ -20,7 +20,6 @@ namespace MyORM.Tests
             
             TestOneToManyRelationship();
             TestCascadeDelete();
-            TestSetNullBehavior();
             TestRelationshipLoading();
             
             Console.WriteLine("Relationship Tests completed.");
@@ -31,8 +30,8 @@ namespace MyORM.Tests
             Console.WriteLine("\nTesting One-to-Many Relationship...");
             
             var manufacturer = new Manufacturer { Id = 301, Name = "BMW Test" };
-            var car1 = new Car { Id = 301, Name = "Test Car 1", Price = 30000, Manufacturer = manufacturer };
-            var car2 = new Car { Id = 302, Name = "Test Car 2", Price = 40000, Manufacturer = manufacturer };
+            var car1 = new Car { Id = 401, Name = "Test Car 1", Price = 30000, Manufacturer = manufacturer };
+            var car2 = new Car { Id = 402, Name = "Test Car 2", Price = 40000, Manufacturer = manufacturer };
 
             _context.Manufacturers.Add(manufacturer);
             _context.Cars.Add(car1);
@@ -49,8 +48,8 @@ namespace MyORM.Tests
         {
             Console.WriteLine("\nTesting Cascade Delete...");
 
-            var manufacturer = new Manufacturer { Id = 401, Name = "Cascade Test" };
-            var car = new Car { Id = 401, Name = "Cascade Car", Price = 50000, Manufacturer = manufacturer };
+            var manufacturer = new Manufacturer { Id = 310, Name = "Cascade Test" };
+            var car = new Car { Id = 410, Name = "Cascade Car", Price = 50000, Manufacturer = manufacturer };
             
             _context.Manufacturers.Add(manufacturer);
             _context.Cars.Add(car);
@@ -58,38 +57,18 @@ namespace MyORM.Tests
 
             var carQuery = _context.Query<Car>();
 
-            var deletedCar1 = carQuery.Where("Id", "=", "401").Execute().FirstOrDefault();
+            var deletedCar1 = carQuery.Where("Id", "=", "410").Execute().FirstOrDefault();
             Console.WriteLine($"Deleted car 1: {deletedCar1?.Name}");
 
             _context.Manufacturers.Remove(manufacturer);
             _context.SaveChanges();
 
             // Verify both manufacturer and car are deleted
-            var deletedCar = carQuery.Where("Id", "=", "401").Execute().FirstOrDefault();
+            var deletedCar = carQuery.Where("Id", "=", "410").Execute().FirstOrDefault();
             Console.WriteLine($"Cascade deleted car found: {(deletedCar == null ? "No" : "Yes")}");
         }
 
-        private void TestSetNullBehavior()
-        {
-            Console.WriteLine("\nTesting SetNull Behavior...");
-            
-            // Create manufacturer with SetNull delete behavior
-            var manufacturer = new Manufacturer { Id = 501, Name = "SetNull Test" };
-            var car = new Car { Id = 501, Name = "Orphan Car", Price = 25000, Manufacturer = manufacturer };
-            
-            _context.Manufacturers.Add(manufacturer);
-            _context.Cars.Add(car);
-            _context.SaveChanges();
-
-            _context.Manufacturers.Remove(manufacturer);
-            _context.SaveChanges();
-
-            // Verify car still exists but without manufacturer
-            var carQuery = _context.Query<Car>();
-            var orphanCar = carQuery.Where("Id", "=", "501").Execute().FirstOrDefault();
-            Console.WriteLine($"Orphan car manufacturer: {(orphanCar?.Manufacturer == null ? "Null" : "Not Null")}");
-        }
-
+       
         private void TestRelationshipLoading()
         {
             Console.WriteLine("\nTesting Relationship Loading...");

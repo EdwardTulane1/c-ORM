@@ -84,3 +84,5 @@ oneto one relation is saved only on one side. (makes sense, otherwise it wil be 
 
 
 delete orphans once in a while.
+Go to define relationship delete behavior options and auto set partly
+
