@@ -35,15 +35,18 @@ namespace MyORM.Tests
             _context.Books.Add(book2);
             _context.SaveChanges();
 
+            var book =  _context.Query<Book>().Where("Id", "=", "1").Execute().FirstOrDefault();
+            Console.WriteLine($"Book: {book.Title}, Author: {(book.Author == null ? "Null" : book.Author.Name)}");
+
             // Delete the author
             _context.Authors.Remove(author);
             _context.SaveChanges();
 
             // Verify that the books' author references are set to null
             var books = _context.Query<Book>().Execute();
-            foreach (var book in books)
+            foreach (var b in books)
             {
-                Console.WriteLine($"Book: {book.Title}, Author: {(book.Author == null ? "Null" : book.Author.Name)}");
+                Console.WriteLine($"Book: {b.Title}, Author: {(b.Author == null ? "Null" : b.Author.Name)}");
             }
         }
     }

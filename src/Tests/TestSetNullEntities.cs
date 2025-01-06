@@ -14,7 +14,7 @@ namespace MyORM.Tests
         [Column("Name", false)]
         public string Name { get; set; }
 
-        [Relationship(RelationType.OneToMany, typeof(Book), onDelete: DeleteBehavior.None)]
+        [Relationship(RelationType.OneToMany, typeof(Book), onDelete: DeleteBehavior.SetNull)]
         public virtual ICollection<Book> Books { get; set; } = new List<Book>();
     }
 
@@ -28,7 +28,7 @@ namespace MyORM.Tests
         [Column("Title", false)]
         public string Title { get; set; }
 
-        [Relationship(RelationType.ManyToOne, typeof(Author), onDelete: DeleteBehavior.SetNull)]
+        [Relationship(RelationType.ManyToOne, typeof(Author), onDelete: DeleteBehavior.None)]
         public virtual Author Author { get; set; }
     }
 
