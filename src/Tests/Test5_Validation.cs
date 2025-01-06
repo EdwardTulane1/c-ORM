@@ -55,146 +55,155 @@ namespace MyORM.Tests
         public void RunAllTests()
         {
             Console.WriteLine("Running Validation Tests...");
-            
+
             TestRequiredValidation();
             TestStringLengthValidation();
             TestEmailValidation();
             TestRangeValidation();
             TestRegexValidation();
             TestMultipleValidations();
-            
+
             Console.WriteLine("Validation Tests completed.");
         }
 
         private void TestRequiredValidation()
         {
             Console.WriteLine("\nTesting Required Validation...");
-            
+
+            var entity = new ValidatedEntity { Id = 1, Score = 50 };
+            _context.ValidatedEntities.Add(entity);
+
             try
             {
-                var entity = new ValidatedEntity { Id = 1, Score = 50 };
-                _context.ValidatedEntities.Add(entity);
                 _context.SaveChanges();
                 Console.WriteLine("Error: Required validation failed to catch null Name");
             }
             catch (ValidationException ex)
             {
-                Console.WriteLine($"Validation caught successfully: {ex.Message}");
+                Console.WriteLine($"1. Validation caught successfully: {ex.Message}");
+                _context.ValidatedEntities.Remove(entity);
             }
         }
 
         private void TestStringLengthValidation()
         {
             Console.WriteLine("\nTesting String Length Validation...");
-            
+            var entity = new ValidatedEntity
+            {
+                Id = 2,
+                Name = "A", // Too short
+                Score = 50
+            };
+            _context.ValidatedEntities.Add(entity);
             try
             {
-                var entity = new ValidatedEntity 
-                { 
-                    Id = 2, 
-                    Name = "A", // Too short
-                    Score = 50 
-                };
-                _context.ValidatedEntities.Add(entity);
+
                 _context.SaveChanges();
                 Console.WriteLine("Error: String length validation failed");
             }
             catch (ValidationException ex)
             {
-                Console.WriteLine($"Validation caught successfully: {ex.Message}");
+                Console.WriteLine($"2. Validation caught successfully: {ex.Message}");
+                _context.ValidatedEntities.Remove(entity);
             }
         }
 
         private void TestEmailValidation()
         {
             Console.WriteLine("\nTesting Email Validation...");
-            
+
+            var entity = new ValidatedEntity
+            {
+                Id = 3,
+                Name = "Test Entity",
+                Email = "invalid-email",
+                Score = 50
+            };
+            _context.ValidatedEntities.Add(entity);
             try
             {
-                var entity = new ValidatedEntity 
-                { 
-                    Id = 3,
-                    Name = "Test Entity",
-                    Email = "invalid-email",
-                    Score = 50
-                };
-                _context.ValidatedEntities.Add(entity);
+
                 _context.SaveChanges();
                 Console.WriteLine("Error: Email validation failed");
             }
             catch (ValidationException ex)
             {
-                Console.WriteLine($"Validation caught successfully: {ex.Message}");
+                Console.WriteLine($"3. Validation caught successfully: {ex.Message}");
+                _context.ValidatedEntities.Remove(entity);
             }
         }
 
         private void TestRangeValidation()
         {
             Console.WriteLine("\nTesting Range Validation...");
-            
+            var entity = new ValidatedEntity
+            {
+                Id = 4,
+                Name = "Test Entity",
+                Score = 101 // Outside valid range
+            };
+            _context.ValidatedEntities.Add(entity);
             try
             {
-                var entity = new ValidatedEntity 
-                { 
-                    Id = 4,
-                    Name = "Test Entity",
-                    Score = 101 // Outside valid range
-                };
-                _context.ValidatedEntities.Add(entity);
+
                 _context.SaveChanges();
                 Console.WriteLine("Error: Range validation failed");
             }
             catch (ValidationException ex)
             {
-                Console.WriteLine($"Validation caught successfully: {ex.Message}");
+                Console.WriteLine($"4. Validation caught successfully: {ex.Message}");
+                _context.ValidatedEntities.Remove(entity);
             }
         }
 
         private void TestRegexValidation()
         {
             Console.WriteLine("\nTesting Regex Validation...");
-            
+            var entity = new ValidatedEntity
+            {
+                Id = 5,
+                Name = "Test Entity",
+                Code = "invalid-code" // Should be format XX999
+            };
+            _context.ValidatedEntities.Add(entity);
             try
             {
-                var entity = new ValidatedEntity 
-                { 
-                    Id = 5,
-                    Name = "Test Entity",
-                    Code = "invalid-code" // Should be format XX999
-                };
-                _context.ValidatedEntities.Add(entity);
+
                 _context.SaveChanges();
                 Console.WriteLine("Error: Regex validation failed");
             }
             catch (ValidationException ex)
             {
-                Console.WriteLine($"Validation caught successfully: {ex.Message}");
+                Console.WriteLine($"5. Validation caught successfully: {ex.Message}");
+                _context.ValidatedEntities.Remove(entity);
             }
         }
 
         private void TestMultipleValidations()
         {
             Console.WriteLine("\nTesting Multiple Validations...");
-            
+
             // Test valid entity
+            var validEntity = new ValidatedEntity
+            {
+                Id = 6,
+                Name = "Valid Test Entity",
+                Email = "test@example.com",
+                Score = 75,
+                Code = "AB123"
+            };
+            _context.ValidatedEntities.Add(validEntity);
             try
             {
-                var validEntity = new ValidatedEntity 
-                { 
-                    Id = 6,
-                    Name = "Valid Test Entity",
-                    Email = "test@example.com",
-                    Score = 75,
-                    Code = "AB123"
-                };
-                _context.ValidatedEntities.Add(validEntity);
+
                 _context.SaveChanges();
                 Console.WriteLine("Valid entity saved successfully");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error: Valid entity failed validation: {ex.Message}");
+                Console.WriteLine($"6. Error: Valid entity failed validation: {ex.Message}");
+                _context.ValidatedEntities.Remove(validEntity);
             }
         }
     }
-} 
+}
