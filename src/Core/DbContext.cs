@@ -109,9 +109,7 @@ namespace MyORM.Core
                   
                     if (entity.IsDeleted)
                     {
-                        // Console.WriteLine($"4. Deleting entity: {entity.GetType().Name}");
                         HelperFuncs.TrackDeletedEntity(entity);
-                        // Console.WriteLine($"before delete: {entity.GetType().Name}");
                         _storageProvider.DeleteEntity(entity, entityType.Name);
                     }
                     else if (entity.HasChanges())
@@ -124,7 +122,7 @@ namespace MyORM.Core
                     }
                 }
                 // TODO - delete orphans
-                // _storageProvider.DeleteOrphans();
+                _storageProvider.DeleteOrphans();
                 HelperFuncs.ClearDeletedEntities();
             }
         }

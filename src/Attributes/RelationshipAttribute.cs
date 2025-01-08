@@ -21,25 +21,25 @@ namespace MyORM.Attributes
                 case RelationType.ManyToMany:
                     if(onDelete != DeleteBehavior.None && onDelete != DeleteBehavior.Cascade)
                     {
-                        throw new Exception("ManyToMany relationship must have a delete behavior");
+                        throw new Exception("ManyToMany relationship must have a delete behavior of Cascade or None");
                     }
                     break;
                 case RelationType.OneToMany:
                     if(onDelete != DeleteBehavior.Cascade && onDelete != DeleteBehavior.SetNull)
                     {
-                        throw new Exception("OneToMany relationship must have a delete behavior");
+                        throw new Exception("OneToMany relationship must have a delete behavior of Cascade or SetNull");
                     }
                     break;
                 case RelationType.ManyToOne:
                     if(onDelete != DeleteBehavior.None)
                     {
-                        throw new Exception("ManyToOne relationship must have a delete behavior");
+                        throw new Exception("ManyToOne relationship must have a delete behavior of None");
                     }
                     break;
                 case RelationType.OneToOne:
                     if(onDelete != DeleteBehavior.Cascade && onDelete != DeleteBehavior.SetNull && onDelete != DeleteBehavior.Orphan)
                     {
-                        throw new Exception("OneToOne relationship must have a delete behavior");
+                        throw new Exception("OneToOne relationship must have a delete behavior of Cascade, SetNull, or Orphan");
                     }
                     break;
                 
@@ -60,7 +60,6 @@ namespace MyORM.Attributes
     {
         Cascade,
         SetNull,
-        Restrict,
         Orphan,
 
         None

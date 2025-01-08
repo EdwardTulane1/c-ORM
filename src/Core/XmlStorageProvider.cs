@@ -410,7 +410,7 @@ namespace MyORM.Core
                         var prop = relatedEntity.GetType().GetProperties()
                             .First(p => p.GetCustomAttribute<RelationshipAttribute>() != null &&
                                         p.GetCustomAttribute<RelationshipAttribute>()?.RelatedType == entityType);
-                        var ondelete = prop.GetCustomAttribute<RelationshipAttribute>()?.OnDelete ?? DeleteBehavior.Restrict;
+                        var ondelete = prop.GetCustomAttribute<RelationshipAttribute>()?.OnDelete ?? DeleteBehavior.None;
 
                         // BIG TODO - check on delete behavior
                         toProcess.Add((prop, relatedEntity, relatedAType, ondelete));
@@ -437,7 +437,6 @@ namespace MyORM.Core
                         HelperFuncs.TrackDeletedEntity(relatedEntity);
                         DeleteEntity(relatedEntity, relatedAType.Name);
                         break;
-                    case DeleteBehavior.Restrict:
                     case DeleteBehavior.None:
                         break;
                 }
@@ -500,9 +499,6 @@ namespace MyORM.Core
                             // BIG TODO - add to toProcess list
                             toProcess.Add((relatedEntity, relatedEntity.GetType(), relAttr.OnDelete));
                             break;
-                        case DeleteBehavior.Restrict:
-                            // do nothing
-                            break;
                     }
                 }
             }
@@ -531,62 +527,62 @@ namespace MyORM.Core
 
             foreach (var entityType in entityTypes)
             {
-                Console.WriteLine($"Deleting orphans for entity type: {entityType.Name}");
+                Console.WriteLine($"Checking orphans for entity type: {entityType.Name}");
                 // Find properties with OneToOne relationships that have Orphan delete behavior
                 var orphanableProperties = entityType.GetProperties()
                     .Where(p => {
                         var relAttr = p.GetCustomAttribute<RelationshipAttribute>();
                         return relAttr?.Type == RelationType.OneToOne && 
-                               relAttr.OnDelete == DeleteBehavior.Orphan; // if its cascade then the other side must hold orphan. otherwise it's circular reference
+                               relAttr.OnDelete == DeleteBehavior.Orphan;
                     });
 
                 if (!orphanableProperties.Any()) continue;
 
-                var xmlPath = HelperFuncs.GetTablePath(_basePath, entityType.Name);
-                if (!File.Exists(xmlPath)) continue;
-
-                var doc = XDocument.Load(xmlPath);
-                var root = doc.Root;
-                var entitiesToRemove = new List<XElement>();
-
-                foreach (var entityElement in root.Elements("Entity"))
+                foreach (var prop in orphanableProperties)
                 {
-                    foreach (var prop in orphanableProperties)
+                    var relAttr = prop.GetCustomAttribute<RelationshipAttribute>();
+                    var orphanType = relAttr?.RelatedType;
+                    
+                    // Get XML paths for both entity types
+                    var orphanXmlPath = HelperFuncs.GetTablePath(_basePath, orphanType!.Name);
+                    var fatherXmlPath = HelperFuncs.GetTablePath(_basePath, entityType.Name);
+                    
+                    if (!File.Exists(orphanXmlPath) || !File.Exists(fatherXmlPath)) continue;
+
+                    var orphanDoc = XDocument.Load(orphanXmlPath);
+                    var fatherDoc = XDocument.Load(fatherXmlPath);
+
+                    var orphanXmlRoot = orphanDoc.Root;
+                    var fatherXmlRoot = fatherDoc.Root;
+
+                    // Get the key property of the orphan type
+                    var orphanKeyProp = HelperFuncs.GetKeyProperty(orphanType);
+                    
+                    // Get the foreign key field name in the father entity
+                    var fatherForeignKeyField = HelperFuncs.GetForeignKeyElementName(orphanType, orphanKeyProp);
+
+                    // Get all keys that are referenced by father entities
+                    var referencedKeys = fatherXmlRoot!.Elements("Entity")
+                        .Select(e => e.Element(fatherForeignKeyField)?.Value)
+                        .Where(k => k != null)
+                        .ToHashSet();
+
+                    // Find orphaned entities (those whose keys are not in referencedKeys)
+                    var orphanedEntities = orphanXmlRoot!.Elements("Entity")
+                        .Where(e => {
+                            var key = e.Element(orphanKeyProp.Name)?.Value;
+                            return key != null && !referencedKeys.Contains(key);
+                        })
+                        .ToList();
+
+                    // Delete orphaned entities
+                    foreach (var orphanedEntity in orphanedEntities)
                     {
-                        Console.WriteLine($"Checking property: {prop.Name}");
-                        var relAttr = prop.GetCustomAttribute<RelationshipAttribute>();
-                        var relatedType = relAttr.RelatedType;
-                        
-                        // Get the foreign key element name
-                        var foreignKeyProp = HelperFuncs.GetKeyProperty(relatedType);
-                        var elementName = HelperFuncs.GetForeignKeyElementName(relatedType, foreignKeyProp);
-                        
-                        // Check if the related entity exists
-                        var foreignKeyValue = entityElement.Element(elementName)?.Value;
-                        if (foreignKeyValue != null)
-                        {
-                            Console.WriteLine($"Foreign key value: {foreignKeyValue}");
-                            // Check if the related entity is deleted
-                            if (HelperFuncs.IsEntityDeleted(relatedType, foreignKeyValue))
-                            {
-                                Console.WriteLine($"Related entity is deleted: {foreignKeyValue}");
-                                entitiesToRemove.Add(entityElement);
-                                break; // No need to check other properties if we're already removing this entity
-                            }
-                        }
+                        var key = orphanedEntity.Element(orphanKeyProp.Name)?.Value;
+                        Console.WriteLine($"Deleting orphaned {orphanType.Name} with key: {key}");
+                        orphanedEntity.Remove();
                     }
-                }
-
-                // Remove orphaned entities
-                foreach (var element in entitiesToRemove)
-                {
-                    Console.WriteLine($"Removing orphaned entity: {element}");
-                    element.Remove();
-                }
-
-                if (entitiesToRemove.Any())
-                {
-                    doc.Save(xmlPath);
+                    orphanDoc.Save(orphanXmlPath);
                 }
             }
         }
