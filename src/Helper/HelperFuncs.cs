@@ -8,8 +8,6 @@ namespace MyORM.Helper
 {
     public static class HelperFuncs
     {
-        private static Dictionary<Type, HashSet<string>> _deletedEntities = new Dictionary<Type, HashSet<string>>();
-
         public static PropertyInfo GetKeyProperty(Type type)
         {
             var keyProp = type.GetProperties()
@@ -23,20 +21,11 @@ namespace MyORM.Helper
             return keyProp;
         }
 
-
-        public static void TrackDeletedEntity(Entity entity)
+        public static string getKey(Type type, Entity entity)
         {
-            var entityType = entity.GetType();
-            var keyProp = HelperFuncs.GetKeyProperty(entityType);
-            var keyValue = keyProp.GetValue(entity)?.ToString();
-
-            if (!_deletedEntities.ContainsKey(entityType))
-            {
-                _deletedEntities[entityType] = new HashSet<string>();
-            }
-            _deletedEntities[entityType].Add(keyValue);
+            var keyProp = GetKeyProperty(type);
+            return keyProp.GetValue(entity)?.ToString() ?? string.Empty;
         }
-            
 
         public static string getFileNameAlphaBetic(string type1, string type2)
         {
@@ -44,16 +33,6 @@ namespace MyORM.Helper
             return $"{orderedTypes[0]}_{orderedTypes[1]}.xml";
         }
 
-        public static bool IsEntityDeleted(Type type, string keyValue)
-        {
-            return _deletedEntities.ContainsKey(type) &&
-                       _deletedEntities[type].Contains(keyValue);
-        }
-
-        public static void ClearDeletedEntities()
-        {
-            _deletedEntities.Clear();
-        }
 
         public static string GetTablePath(string basePath, string tableName)
         {
@@ -124,23 +103,5 @@ namespace MyORM.Helper
             return $"{relatedType.Name}_{foreignKeyProp.Name}";
         }
 
-        public static XDocument GetOrCreateXmlDocument(string filePath)
-    {
-        return File.Exists(filePath)
-            ? XDocument.Load(filePath)
-            : new XDocument(new XElement("Relationships"));
-    }
-
-    public static void SaveXmlDocument(XDocument doc, string filePath)
-    {
-        try
-        {
-            doc.Save(filePath);
-        }
-        catch (Exception ex)
-        {
-            throw new IOException($"Failed to save XML document to {filePath}", ex);
-        }
-    }
     }
 }

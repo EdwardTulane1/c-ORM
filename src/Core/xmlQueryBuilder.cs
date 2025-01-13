@@ -7,74 +7,72 @@ using System.Xml;
 
 namespace MyORM.Core;
 
-public class XmlQueryBuilder<T> where T : Entity
+public class XmlQueryBuilder<TEntity> where TEntity : Entity
 {
-    private List<QueryCondition> _conditions = new List<QueryCondition>();
-    private List<string> _orderByProperties = new List<string>();
-    private bool _orderDescending = false;
-    private int? _take = null;
-    private int? _skip = null;
-    private readonly string _basePath;
+    private  List<QueryCondition> _conditions = new ();
+    private  List<string> _orderByProperties = new ();
+    private  bool _isDescending;
+    private  int? _takeCount;
+    private  int? _skipCount;
+    private readonly XmlConnection _connection;
     private readonly string _tableName;
-    private readonly DbSet<T> _dbSet;
-    public XmlQueryBuilder(string basePath, string tableName, DbSet<T> dbSet)
+    private readonly DbSet<TEntity> _entitySet;
+
+    public XmlQueryBuilder(XmlConnection connection, string tableName, DbSet<TEntity> entitySet)
     {
-        _basePath = basePath;
+        _connection = connection;
         _tableName = tableName;
-        _dbSet = dbSet;
+        _entitySet = entitySet;
     }
 
-    public record EntityPlusXml<TEntity>(TEntity Entity, XElement xmlElement);
-    public class EntityPlusXmlList<Z> : List<EntityPlusXml<Z>> {
-        public EntityPlusXmlList(List<EntityPlusXml<Z>> list) : base(list) { }
-        public EntityPlusXmlList() : base() { }
+    public record EntityWithXml<T>(T Entity, XElement XmlElement);
+    public class EntityCollection<T> : List<EntityWithXml<T>> {
+        public EntityCollection(List<EntityWithXml<T>> entities) : base(entities) { }
+        public EntityCollection() : base() { }
     }
 
-
-
-    public XmlQueryBuilder<T> Where(string propertyName, string op, object value)
+    public XmlQueryBuilder<TEntity> Where(string propertyName, string op, object value)
     {
         _conditions.Add(new QueryCondition(propertyName, op, value));
         return this;
     }
 
-    public XmlQueryBuilder<T> OrderBy(string propertyName, bool descending = false)
+    public XmlQueryBuilder<TEntity> OrderBy(string propertyName, bool descending = false)
     {
         _orderByProperties.Add(propertyName);
-        _orderDescending = descending;
+        _isDescending = descending;
         return this;
     }
 
-    public XmlQueryBuilder<T> Take(int count)
+    public XmlQueryBuilder<TEntity> Take(int count)
     {
-        _take = count;
+        _takeCount = count;
         return this;
     }
 
-    public XmlQueryBuilder<T> Skip(int count)
+    public XmlQueryBuilder<TEntity> Skip(int count)
     {
-        _skip = count;
+        _skipCount = count;
         return this;
     }
 
-    public List<T> Execute()
+    public List<TEntity> Execute()
     {
-        var xmlPath = HelperFuncs.GetTablePath(_basePath, _tableName);
-        // Console.WriteLine($"Executing query on table: {xmlPath}");
+       
 
-        if (!File.Exists(xmlPath))
+        var doc = _connection.GetDocument(_tableName, false);
+
+        if (doc == null)
         {
-            Console.WriteLine($"zzzz file not found");
-            return new List<T>();
+            return new List<TEntity>();
         }
 
-        var doc = XDocument.Load(xmlPath)!;
-        var results = new EntityPlusXmlList<T>();  // Changed to tuple list
+        var results = new EntityCollection<TEntity>();  // Changed to tuple list
 
         // Apply where conditions
         foreach (var element in doc!.Root!.Elements("Entity"))
         {
-            var entityElement = HelperFuncs.XmlToEntity<T>(element);
+            var entityElement = HelperFuncs.XmlToEntity<TEntity>(element);
             bool matchesAllConditions = true;
             foreach (var condition in _conditions)
             {
@@ -86,7 +84,7 @@ public class XmlQueryBuilder<T> where T : Entity
             }
             if (matchesAllConditions)
             {
-                results.Add(new EntityPlusXml<T>(entityElement, element));
+                results.Add(new EntityWithXml<TEntity>(entityElement, element));
             }
         }
 
@@ -100,22 +98,22 @@ public class XmlQueryBuilder<T> where T : Entity
         var finalResults = ApplyPagination(results);
 
         // Convert XElements to entities and load their relationships
-        var entities = new List<T>();
+        var entities = new List<TEntity>();
         foreach (var element in finalResults)
         {
             entities.Add(LoadRelatedEntities(element));
 
 
             // IN HERE  BIG TODO: I HAVE TO ATTACH TRACKER TO THE ENTITY AND THE RELATED ENTITIES
-            _dbSet.TrackEntity(element.Entity);
+            _entitySet.TrackEntity(element.Entity);
         }
 
         return entities;
     }
 
-    private EntityPlusXmlList<T> ApplyOrdering(EntityPlusXmlList<T> elements)
+    private EntityCollection<TEntity> ApplyOrdering(EntityCollection<TEntity> elements)
     {
-        var ordered = new EntityPlusXmlList<T>(elements);
+        var ordered = new EntityCollection<TEntity>(elements);
         ordered.Sort((a, b) =>
         {
             foreach (var prop in _orderByProperties)
@@ -126,7 +124,7 @@ public class XmlQueryBuilder<T> where T : Entity
                 
                 if (comparison != 0)
                 {
-                    return _orderDescending ? -comparison : comparison;
+                    return _isDescending ? -comparison : comparison;
                 }
             }
             return 0;
@@ -134,12 +132,12 @@ public class XmlQueryBuilder<T> where T : Entity
         return ordered;
     }
 
-    private EntityPlusXmlList<T> ApplyPagination(EntityPlusXmlList<T> elements)
+    private EntityCollection<TEntity> ApplyPagination(EntityCollection<TEntity> elements)
     {
-        var result = new EntityPlusXmlList<T>();
-        int startIndex = _skip.GetValueOrDefault(0);
-        int endIndex = _take.HasValue ? 
-            Math.Min(startIndex + _take.Value, elements.Count) : 
+        var result = new EntityCollection<TEntity>();
+        int startIndex = _skipCount.GetValueOrDefault(0);
+        int endIndex = _takeCount.HasValue ? 
+            Math.Min(startIndex + _takeCount.Value, elements.Count) : 
             elements.Count;
 
         for (int i = startIndex; i < endIndex; i++)
@@ -149,7 +147,7 @@ public class XmlQueryBuilder<T> where T : Entity
         return result;
     }
 
-    private bool EvaluateCondition(T entityElement, QueryCondition condition)
+    private bool EvaluateCondition(TEntity entityElement, QueryCondition condition)
     {
         var elementValue = entityElement.GetType().GetProperty(condition.PropertyName)?.GetValue(entityElement);
         if (elementValue == null)
@@ -222,9 +220,9 @@ public class XmlQueryBuilder<T> where T : Entity
         }
     }
 
-    private T LoadRelatedEntities(EntityPlusXml<T> entityElement)
+    private TEntity LoadRelatedEntities(EntityWithXml<TEntity> entityElement)
     {
-        var properties = typeof(T).GetProperties();
+        var properties = typeof(TEntity).GetProperties();
         foreach (var prop in properties)
         {
             var relAttr = prop.GetCustomAttribute<RelationshipAttribute>();
@@ -248,15 +246,13 @@ public class XmlQueryBuilder<T> where T : Entity
         return entityElement.Entity;
     }
 
-    private void LoadManyToManyRelations(EntityPlusXml<T> entityElement, PropertyInfo prop, RelationshipAttribute relAttr)
+    private void LoadManyToManyRelations(EntityWithXml<TEntity> entityElement, PropertyInfo prop, RelationshipAttribute relAttr)
     {
-        var mappingFileName = HelperFuncs.getFileNameAlphaBetic(typeof(T).Name, relAttr.RelatedType.Name);
-        var filePath = Path.Combine(_basePath, mappingFileName);
-        
-        if (!File.Exists(filePath)) return;
+        var mappingFileName = HelperFuncs.getFileNameAlphaBetic(typeof(TEntity).Name, relAttr.RelatedType.Name);
 
-        var doc = XDocument.Load(filePath);
-        var entityKeyValue = HelperFuncs.GetKeyProperty(typeof(T))
+        var doc = _connection.GetDocument(mappingFileName, true);
+
+        var entityKeyValue = HelperFuncs.GetKeyProperty(typeof(TEntity))
             .GetValue(entityElement.Entity)?.ToString();
 
         // Create the correct list type
@@ -266,7 +262,7 @@ public class XmlQueryBuilder<T> where T : Entity
         // Find relationships where this entity appears under its type name
         foreach (var rel in doc.Root.Elements("Relationship"))
         {
-            if (rel.Element(typeof(T).Name)?.Value == entityKeyValue)
+            if (rel.Element(typeof(TEntity).Name)?.Value == entityKeyValue)
             {
                 var relatedKey = rel.Element(relAttr.RelatedType.Name)?.Value;
                 if (relatedKey != null)
@@ -283,13 +279,13 @@ public class XmlQueryBuilder<T> where T : Entity
         prop.SetValue(entityElement.Entity, relatedEntities);
     }
 
-    private void LoadSingleRelation(EntityPlusXml<T> entityElement, PropertyInfo prop, RelationshipAttribute relAttr)
+    private void LoadSingleRelation(EntityWithXml<TEntity> entityElement, PropertyInfo prop, RelationshipAttribute relAttr)
     {
         var foreignKeyProp = $"{relAttr.RelatedType.Name}_{HelperFuncs.GetKeyProperty(relAttr.RelatedType).Name}";
         // get entity from the xml
         // how to log tyhe entity with all its properties and values
 
-        var foreignKeyValue = entityElement.xmlElement.Element(foreignKeyProp)?.Value;
+        var foreignKeyValue = entityElement.XmlElement.Element(foreignKeyProp)?.Value;
 
         //console.WriteLine($"foreignKeyProp: {foreignKeyProp}, foreignKeyValue: {foreignKeyValue}");
         if (foreignKeyValue != null)
@@ -301,24 +297,21 @@ public class XmlQueryBuilder<T> where T : Entity
         }
     }
 
-    private void LoadOneToManyRelations(EntityPlusXml<T> entityElement, PropertyInfo prop, RelationshipAttribute relAttr)
+    private void LoadOneToManyRelations(EntityWithXml<TEntity> entityElement, PropertyInfo prop, RelationshipAttribute relAttr)
     {
         // Get the key value of the current entity
-        var entityKeyProp = HelperFuncs.GetKeyProperty(typeof(T));
+        var entityKeyProp = HelperFuncs.GetKeyProperty(typeof(TEntity));
         var entityKeyValue = entityKeyProp.GetValue(entityElement.Entity)?.ToString();
             
         var foreignKeyProp = $"{entityElement.Entity.GetType().Name}_{entityKeyProp.Name}";
 
-        var relatedEntityFilePath = HelperFuncs.GetTablePath(_basePath, relAttr.RelatedType.Name);
-        if (!File.Exists(relatedEntityFilePath)) return;
-
-        var doc = XDocument.Load(relatedEntityFilePath);
+        var doc = _connection.GetDocument(relAttr.RelatedType.Name, true);
 
 
         // var relatedEntities = new List<object>();
 
          var listType = typeof(List<>).MakeGenericType(relAttr.RelatedType);
-         var relatedEntities = (System.Collections.IList)Activator.CreateInstance(listType, 0);  // Use non-generic IList
+         var relatedEntities = (System.Collections.IList)Activator.CreateInstance(listType, 0);  
 
 
         foreach (var element in doc?.Root?.Elements("Entity"))
@@ -340,10 +333,8 @@ public class XmlQueryBuilder<T> where T : Entity
     private List<object> LoadEntitiesByKeys(Type entityType, List<string> keys)
     {
         var entities = new List<object>();
-        var xmlPath = HelperFuncs.GetTablePath(_basePath, entityType.Name);
-        if (!File.Exists(xmlPath)) return entities;
 
-        var doc = XDocument.Load(xmlPath);
+        var doc = _connection.GetDocument(entityType.Name, true);
         var keyProp = HelperFuncs.GetKeyProperty(entityType);
 
         foreach (var element in doc.Root.Elements("Entity"))
@@ -364,10 +355,8 @@ public class XmlQueryBuilder<T> where T : Entity
     private ICollection<object> LoadRelatedEntities(Type entityType, Type parentType, string parentKeyValue)
     {
         var entities = new List<object>();
-        var xmlPath = HelperFuncs.GetTablePath(_basePath, entityType.Name);
-        if (!File.Exists(xmlPath)) return entities;
-
-        var doc = XDocument.Load(xmlPath);
+  
+        var doc = _connection.GetDocument(entityType.Name, true);
         var foreignKeyName = $"{parentType.Name}_{HelperFuncs.GetKeyProperty(parentType).Name}";
 
         foreach (var element in doc.Root.Elements("Entity"))

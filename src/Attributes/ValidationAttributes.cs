@@ -26,18 +26,18 @@ namespace MyORM.Attributes.Validation
     public class ValidationResult
     {
         public bool IsValid { get; }
-        public string Message { get; }
+        public string ErrorMessage { get; }
         public string PropertyName { get; }
-        public ValidationErrorLevel ErrorLevel { get; }
+        public ValidationErrorLevel Severity { get; }
 
         public static ValidationResult Success => new ValidationResult(true, string.Empty, string.Empty, ValidationErrorLevel.Warning);
 
-        public ValidationResult(bool isValid, string message, string propertyName, ValidationErrorLevel errorLevel)
+        public ValidationResult(bool isValid, string errorMessage, string propertyName, ValidationErrorLevel severity)
         {
             IsValid = isValid;
-            Message = message;
+            ErrorMessage = errorMessage;
             PropertyName = propertyName;
-            ErrorLevel = errorLevel;
+            Severity = severity;
         }
     }
 
@@ -195,7 +195,7 @@ namespace MyORM.Attributes.Validation
         private static string FormatValidationMessage(List<ValidationResult> results)
         {
             var errorMessages = results
-                .Select(r => $"{r.PropertyName}: {r.Message} ({r.ErrorLevel})")
+                .Select(r => $"{r.PropertyName}: {r.ErrorMessage} ({r.Severity})")
                 .ToList();
 
             return $"Validation failed with {results.Count} errors:\n" +
@@ -232,26 +232,19 @@ namespace MyORM.Attributes.Validation
             return ValidationResult.Success;
         }
 
-        private static ValidationResult ValidateKeyUniqueness(object entity)
+        private static ValidationResult ValidateKeyUniqueness(object entity, XmlConnection connection)
         {
             var keyProp = HelperFuncs.GetKeyProperty(entity.GetType());
             var keyValue = keyProp.GetValue(entity)?.ToString();
             var entityType = entity.GetType();
-            // Console.WriteLine($"entityType: {entityType.Name}, keyValue: {keyValue}. isNew: {((Entity)entity).IsNew}");
 
-            // Check if entity is new and key already exists
-            // BIG TODO - the IsNew is always true. Has to check
-            // Console.WriteLine($"Validating key uniqueness for entity: {entity.GetType().Name}, key: {keyValue}, isNew: {((Entity)entity).IsNew}");
             if (((Entity)entity).IsNew)
             {
-                var xmlPath = HelperFuncs.GetTablePath(
-                    Path.Combine(Directory.GetCurrentDirectory(), "XmlStorage"), 
-                    entityType.Name);
-
-                if (File.Exists(xmlPath))
+                var doc = connection.GetDocument(entityType.Name);
+                
+                if (doc?.Root != null)
                 {
-                    var doc = XDocument.Load(xmlPath);
-                    var existingEntity = doc.Root?.Elements("Entity")
+                    var existingEntity = doc.Root.Elements("Entity")
                         .FirstOrDefault(e => e.Element(keyProp.Name)?.Value == keyValue);
 
                     if (existingEntity != null)
@@ -268,15 +261,13 @@ namespace MyORM.Attributes.Validation
             return ValidationResult.Success;
         }
 
-        public static void ValidateEntity(object entity)
+        public static void ValidateEntity(object entity, XmlConnection connection)
         {
-            // Console.WriteLine($"Validating entity of type {entity.GetType().Name}");
-            
             var results = new List<ValidationResult>();
 
             // Global validations
             results.Add(ValidateKeyProperty(entity));
-            results.Add(ValidateKeyUniqueness(entity));
+            results.Add(ValidateKeyUniqueness(entity, connection));
 
             // Property-level validations
             var properties = entity.GetType().GetProperties();
@@ -299,7 +290,7 @@ namespace MyORM.Attributes.Validation
             }
 
             // If there are any errors (not warnings), throw exception
-            var errors = results.Where(r => r.ErrorLevel >= ValidationErrorLevel.Error && !r.IsValid).ToList();
+            var errors = results.Where(r => r.Severity >= ValidationErrorLevel.Error && !r.IsValid).ToList();
             if (errors.Any())
             {
                 LogValidationErrors(errors);
@@ -312,7 +303,7 @@ namespace MyORM.Attributes.Validation
             Console.WriteLine("❌ Validation failed! Found the following errors:");
             foreach (var error in errors)
             {
-                var errorIcon = error.ErrorLevel switch
+                var errorIcon = error.Severity switch
                 {
                     ValidationErrorLevel.Warning => "⚠️",
                     ValidationErrorLevel.Error => "❌",
@@ -320,7 +311,7 @@ namespace MyORM.Attributes.Validation
                     _ => "❓"
                 };
 
-                Console.WriteLine($"{errorIcon} {error.PropertyName}: {error.Message} ({error.ErrorLevel})");
+                Console.WriteLine($"{errorIcon} {error.PropertyName}: {error.ErrorMessage} ({error.Severity})");
             }
             Console.WriteLine();
         }

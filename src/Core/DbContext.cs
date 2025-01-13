@@ -16,8 +16,9 @@ namespace MyORM.Core
     {
         private readonly string _xmlBasePath;
         private readonly XmlStorageProvider _storageProvider;
-        private Dictionary<Type, HashSet<string>> _deletedEntities;
+        private readonly XmlConnection _connection;
         protected Dictionary<Type, string> TableMappings { get; } = new Dictionary<Type, string>();
+
 
         /*
          * Constructor initializes the context with the XML storage path
@@ -27,8 +28,9 @@ namespace MyORM.Core
         protected DbContext(string xmlBasePath)
         {
             _xmlBasePath = xmlBasePath;
-            _storageProvider = new XmlStorageProvider(xmlBasePath);
-            _deletedEntities = new Dictionary<Type, HashSet<string>>();
+            _connection = new XmlConnection(xmlBasePath);
+            _connection.Open();
+            _storageProvider = new XmlStorageProvider(_connection);
             InitializeDbSets();
             MapEntities();
         }
@@ -84,7 +86,6 @@ namespace MyORM.Core
         public void SaveChanges()
         {
             // Clear previous tracking
-            _deletedEntities.Clear();
 
             var graph = BuildDependencyGraph();
             var sortedEntityTypes = graph.GetSortedEntities();
@@ -109,12 +110,11 @@ namespace MyORM.Core
                   
                     if (entity.IsDeleted)
                     {
-                        HelperFuncs.TrackDeletedEntity(entity);
                         _storageProvider.DeleteEntity(entity, entityType.Name);
                     }
                     else if (entity.HasChanges())
                     {
-                        ValidationHelper.ValidateEntity(entity);
+                        ValidationHelper.ValidateEntity(entity, _connection);
                         _storageProvider.SaveEntity(entity, entityType.Name);
                         entity.IsNew = false;
                         entity.IsModified = false;
@@ -123,7 +123,6 @@ namespace MyORM.Core
                 }
                 // TODO - delete orphans
                 _storageProvider.DeleteOrphans();
-                HelperFuncs.ClearDeletedEntities();
             }
         }
 
@@ -174,10 +173,9 @@ namespace MyORM.Core
             return graph;
         }
 
-
         public void Dispose()
         {
-            // TODO: ... 
+            _connection?.Dispose();
         }
 
         protected DbSet<T> GetDbSet<T>() where T : Entity
@@ -190,7 +188,12 @@ namespace MyORM.Core
         public XmlQueryBuilder<T> Query<T>() where T : Entity
         {
             var dbSet = GetDbSet<T>();
-            return new XmlQueryBuilder<T>(_xmlBasePath, typeof(T).Name, dbSet);
+            return new XmlQueryBuilder<T>(GetConnection(), typeof(T).Name, dbSet);
+        }
+
+        internal XmlConnection GetConnection()
+        {
+            return _connection;
         }
     }
 }

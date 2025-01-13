@@ -9,25 +9,22 @@ using System.Xml.Linq;
 using System.Reflection;
 using MyORM.Attributes;
 using MyORM.Helper;
-using MyORM.Core;
+
 
 namespace MyORM.Core
 {
     public class XmlStorageProvider
     {
-        private readonly string _basePath;
-        private readonly Dictionary<string, XDocument> _documents;
+        private readonly XmlConnection _connection;
 
         /*
          * Initializes the storage provider with a base path for XML files
          * Creates the directory if it doesn't exist
          * @param basePath: Directory path where XML files will be stored
          */
-        public XmlStorageProvider(string basePath)
+        public XmlStorageProvider(XmlConnection connection)
         {
-            _basePath = basePath;
-            _documents = new Dictionary<string, XDocument>();
-            Directory.CreateDirectory(basePath);
+            _connection = connection;
         }
 
 
@@ -41,12 +38,9 @@ namespace MyORM.Core
          */
         public void SaveEntity<T>(T entity, string tableName) where T : Entity
         {
-            // each table has its own XML file (e.g. Customer.xml, Order.xml)
-            var xmlPath = HelperFuncs.GetTablePath(_basePath, tableName);
-            var xmlDocument = GetOrCreateDocument(tableName, xmlPath);
-            var rootElement = xmlDocument.Root;
+            var doc = _connection.GetDocument(tableName, true);
+            var rootElement = doc.Root;
             var newEntityElement = new XElement("Entity");
-            var entityType = entity.GetType();
 
             // each entity is an element in the XML file (e.g. <Entity>, <Entity>, <Entity>)
             var actualType = entity.GetType();  // This gets the real type (Customer or Order)
@@ -92,7 +86,7 @@ namespace MyORM.Core
                 rootElement.Add(newEntityElement);
             }
 
-            xmlDocument.Save(xmlPath);
+            _connection.SaveDocument(tableName);
         }
 
         /*
@@ -103,8 +97,7 @@ namespace MyORM.Core
          */
         public void DeleteEntity<T>(T entity, string tableName) where T : Entity
         {
-            var xmlPath = HelperFuncs.GetTablePath(_basePath, tableName);
-            var doc = GetOrCreateDocument(tableName, xmlPath);
+            var doc = _connection.GetDocument(tableName, true);
             var root = doc.Root;
 
             var entityType = entity.GetType();
@@ -122,36 +115,8 @@ namespace MyORM.Core
                 // Delete the entity itself
                 var elementToRemove = HelperFuncs.GetEntityByKey(root, keyProp, keyValue);
                 elementToRemove?.Remove();
-                doc.Save(xmlPath);
+                _connection.SaveDocument(tableName);
             }
-        }
-
-        /*
-         * Gets or creates an XML document for a table
-         * Caches documents to avoid repeated file I/O
-         * @param tableName: The name of the table
-         * @param xmlPath: The file path for the XML document
-         * @returns: The XDocument for the specified table
-         */
-        private XDocument GetOrCreateDocument(string tableName, string xmlPath)
-        {
-            if (_documents.ContainsKey(tableName))
-            {
-                return _documents[tableName];
-            }
-
-            XDocument doc;
-            if (File.Exists(xmlPath))
-            {
-                doc = XDocument.Load(xmlPath);
-            }
-            else
-            {
-                doc = new XDocument(new XElement("Entities"));
-            }
-
-            _documents[tableName] = doc;
-            return doc;
         }
 
         /*
@@ -243,8 +208,7 @@ namespace MyORM.Core
             try
             {
                 var sourceEntityType = entity.GetType();
-                var mappingFilePath = Path.Combine(_basePath, relationshipFile);
-                var mappingDocument = GetOrCreateDocument(relationshipFile, mappingFilePath);
+                var mappingDocument = _connection.GetDocument(relationshipFile, true);
                 var mappingRoot = mappingDocument.Root;
                 var sourceEntityKeyProperty = HelperFuncs.GetKeyProperty(sourceEntityType);
                 var sourceEntityKeyValue = sourceEntityKeyProperty.GetValue(entity)?.ToString();
@@ -279,7 +243,7 @@ namespace MyORM.Core
                     mappingRoot.Add(relationshipElement);
                 }
 
-                mappingDocument.Save(mappingFilePath);
+                _connection.SaveDocument(relationshipFile);
             }
             catch (Exception ex)
             {
@@ -334,11 +298,11 @@ namespace MyORM.Core
         {
             // Get the XML file for the related entities
             var relatedTableName = relAttr.RelatedType.Name;
-            var relatedXmlPath = Path.Combine(_basePath, $"{relatedTableName}.xml");
-
-            if (!File.Exists(relatedXmlPath)) return;
-
-            var doc = XDocument.Load(relatedXmlPath);
+            var doc = _connection.GetDocument(relatedTableName, false);
+            if (doc == null)
+            {
+                return;
+            }
             var root = doc.Root;
 
             // Get the foreign key property name
@@ -357,7 +321,6 @@ namespace MyORM.Core
                 case DeleteBehavior.Cascade:
                     // Delete the related entity
                     relatedEntity.IsDeleted = true;
-                    HelperFuncs.TrackDeletedEntity(relatedEntity);
                     DeleteEntity(relatedEntity, relatedTableName);
                     break;
 
@@ -365,7 +328,7 @@ namespace MyORM.Core
                     // Remove the foreign key reference
                     var foreignKeyElement = relatedEntityXml.Element(relationProperty);
                     foreignKeyElement?.Remove();
-                    doc.Save(relatedXmlPath);
+                    _connection.SaveDocument(relatedTableName);
                     break;
             }
         }
@@ -380,11 +343,13 @@ namespace MyORM.Core
         private void DeleteManyToManyRelationships(Type entityType, Type relatedType, string entityKeyValue)
         {
             var mappingFileName = HelperFuncs.getFileNameAlphaBetic(entityType.Name, relatedType.Name);
-            var filePath = Path.Combine(_basePath, mappingFileName);
+          
 
-            if (!File.Exists(filePath)) return;
-
-            var doc = XDocument.Load(filePath);
+            var doc = _connection.GetDocument(mappingFileName, false);
+            if (doc == null)
+            {
+                return;
+            }
             var rootElement = doc.Root;
 
             // First collect all relationships and related entities to process
@@ -424,7 +389,7 @@ namespace MyORM.Core
 
 
             // Save relationship changes
-            doc.Save(filePath);
+            _connection.SaveDocument(mappingFileName);
 
             // Finally, process entity deletions
             foreach (var (prop, relatedEntity, relatedAType, deleteBehavior) in toProcess)
@@ -434,7 +399,6 @@ namespace MyORM.Core
                 {
                     case DeleteBehavior.Cascade:
                         relatedEntity.IsDeleted = true;
-                        HelperFuncs.TrackDeletedEntity(relatedEntity);
                         DeleteEntity(relatedEntity, relatedAType.Name);
                         break;
                     case DeleteBehavior.None:
@@ -457,11 +421,12 @@ namespace MyORM.Core
             // Console.WriteLine($"Handling One to Many deletion");
             // Get the XML file for the related entities
             var relatedTableName = relAttr.RelatedType.Name;
-            var relatedXmlPath = Path.Combine(_basePath, $"{relatedTableName}.xml");
 
-            if (!File.Exists(relatedXmlPath)) return;
-
-            var doc = XDocument.Load(relatedXmlPath);
+            var doc = _connection.GetDocument(relatedTableName, false);
+            if (doc == null)
+            {
+                return;
+            }
             var root = doc.Root;
 
             var relationProperty = $"{entity.GetType().Name}_{HelperFuncs.GetKeyProperty(relAttr.RelatedType).Name}";
@@ -502,7 +467,7 @@ namespace MyORM.Core
                     }
                 }
             }
-            doc.Save(relatedXmlPath);
+            _connection.SaveDocument(relatedTableName);
 
             foreach (var (relatedEntity, relatedType, deleteBehavior) in toProcess)
             {
@@ -511,7 +476,6 @@ namespace MyORM.Core
                     case DeleteBehavior.Cascade:
                         
                         relatedEntity.IsDeleted = true;
-                        HelperFuncs.TrackDeletedEntity(relatedEntity);
                         DeleteEntity(relatedEntity, relatedEntity.GetType().Name);
                         break;
                 }
@@ -520,14 +484,12 @@ namespace MyORM.Core
 
         public void DeleteOrphans()
         {
-            Console.WriteLine("Deleting orphans...");
             // Get all entity types from the executing assembly
             var entityTypes = Assembly.GetExecutingAssembly().GetTypes()
                 .Where(t => t.IsClass && !t.IsAbstract && t.IsSubclassOf(typeof(Entity)));
 
             foreach (var entityType in entityTypes)
             {
-                Console.WriteLine($"Checking orphans for entity type: {entityType.Name}");
                 // Find properties with OneToOne relationships that have Orphan delete behavior
                 var orphanableProperties = entityType.GetProperties()
                     .Where(p => {
@@ -544,13 +506,10 @@ namespace MyORM.Core
                     var orphanType = relAttr?.RelatedType;
                     
                     // Get XML paths for both entity types
-                    var orphanXmlPath = HelperFuncs.GetTablePath(_basePath, orphanType!.Name);
-                    var fatherXmlPath = HelperFuncs.GetTablePath(_basePath, entityType.Name);
-                    
-                    if (!File.Exists(orphanXmlPath) || !File.Exists(fatherXmlPath)) continue;
+                 
 
-                    var orphanDoc = XDocument.Load(orphanXmlPath);
-                    var fatherDoc = XDocument.Load(fatherXmlPath);
+                    var orphanDoc = _connection.GetDocument(orphanType!.Name, true)!;
+                    var fatherDoc = _connection.GetDocument(entityType.Name, true)!;
 
                     var orphanXmlRoot = orphanDoc.Root;
                     var fatherXmlRoot = fatherDoc.Root;
@@ -582,21 +541,10 @@ namespace MyORM.Core
                         Console.WriteLine($"Deleting orphaned {orphanType.Name} with key: {key}");
                         orphanedEntity.Remove();
                     }
-                    orphanDoc.Save(orphanXmlPath);
+                    _connection.SaveDocument(orphanType!.Name);
                 }
             }
         }
 
-
-
-
-
-        // public IQueryable<T> Query<T>() where T : Entity
-        // {
-        //     var builder = new XmlQueryBuilder<T>(_basePath, typeof(T).Name);
-        //     return builder.Execute().AsQueryable();
-        // }
     }
-
-
 }
