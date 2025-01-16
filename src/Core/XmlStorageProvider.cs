@@ -177,7 +177,6 @@ namespace MyORM.Core
                             var relatedEntity = prop.GetValue(entity) as Entity;
                             if (relatedEntity == null)
                             {
-                                Console.WriteLine($"Related entity is null for property: {prop.Name}");
                                 continue;
                             }
                             var foreignKeyValue = foreignKeyProp.GetValue(relatedEntity)?.ToString()!;

@@ -7,20 +7,25 @@ namespace MyORM.Core
     /// </summary>
     public class XmlConnection : IDisposable
     {
+        private static readonly Lazy<XmlConnection> _instance = 
+            new Lazy<XmlConnection>(() => new XmlConnection());
+
         public readonly string _basePath;
         private readonly Dictionary<string, XDocument> _documentCache;
         private bool _isOpen;
         private readonly object _lockObject = new object();
 
-        public XmlConnection(string basePath)
+        private XmlConnection()
         {
-            _basePath = basePath;
+            _basePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data");
             _documentCache = new Dictionary<string, XDocument>();
             _isOpen = false;
             
             // Ensure storage directory exists
-            Directory.CreateDirectory(basePath);
+            Directory.CreateDirectory(_basePath);
         }
+
+        public static XmlConnection Instance => _instance.Value;
 
         /// <summary>
         /// Opens the connection and initializes resources

@@ -290,7 +290,6 @@ public class XmlQueryBuilder<TEntity> where TEntity : Entity
         //console.WriteLine($"foreignKeyProp: {foreignKeyProp}, foreignKeyValue: {foreignKeyValue}");
         if (foreignKeyValue != null)
         {
-            //console.WriteLine($"foreignKeyValue: {foreignKeyValue}");
             var relatedEntity = HelperFuncs.LoadEntityByKey(relAttr.RelatedType, foreignKeyValue);
             //console.WriteLine($"relatedEntity: {relatedEntity}");
             prop.SetValue(entityElement.Entity, relatedEntity);

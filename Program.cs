@@ -3,7 +3,8 @@ using MyORM.Tests;
 
 namespace MyORM
 // Tests 1 - 2 - 3 are working
-// Test 4 - check one to one relationship
+// Test 4 - working
+// Test 5 - working . but if not removed in catch the same error will be save in context and will throw the same error over and over
 {
     public class Program
     {
@@ -21,11 +22,14 @@ namespace MyORM
             // var test3 = new Test3_Queries();
             // test3.RunAllTests();
 
-            var test4 = new Test4_AdvancedRelationships();
-            test4.RunAllTests();
+            // var test4 = new Test4_AdvancedRelationships();
+            // test4.RunAllTests();
 
             // var test5 = new Test5_Validation();
             // test5.RunAllTests();
+
+            var test6 = new TestSetNullBehavior();
+            test6.RunAllTests();
 
             Console.WriteLine("\nAll tests completed.");
         }

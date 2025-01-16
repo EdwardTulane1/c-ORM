@@ -9,11 +9,11 @@ namespace MyORM.Tests
     [Table("Students")]
     public class Student : Entity
     {
-        [Key(isAutoIncrement: false)]
-        [Column("Id", false)]
+        [Key]
+        [Column("Id")]
         public int Id { get; set; }
 
-        [Column("Name", false)]
+        [Column("Name")]
         public string Name { get; set; }
 
         [Relationship(RelationType.ManyToMany, typeof(Course), onDelete: DeleteBehavior.None)]
@@ -26,11 +26,11 @@ namespace MyORM.Tests
     [Table("Courses")]
     public class Course : Entity
     {
-        [Key(isAutoIncrement: false)]
-        [Column("Id", false)]
+        [Key]
+        [Column("Id")]
         public int Id { get; set; }
 
-        [Column("Name", false)]
+        [Column("Name")]
         public string Name { get; set; }
 
         [Relationship(RelationType.ManyToMany, typeof(Student), onDelete: DeleteBehavior.None)]
@@ -40,11 +40,11 @@ namespace MyORM.Tests
     [Table("StudentProfiles")]
     public class StudentProfile : Entity
     {
-        [Key(isAutoIncrement: false)]
-        [Column("Id", false)]
+        [Key]
+        [Column("Id")]
         public int Id { get; set; }
 
-        [Column("Email", false)]
+        [Column("Email")]
         public string Email { get; set; }
 
         [Relationship(RelationType.OneToOne, typeof(Student), onDelete: DeleteBehavior.SetNull)]

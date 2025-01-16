@@ -5,12 +5,10 @@ namespace MyORM.Attributes
     public class ColumnAttribute : Attribute
     {
         public string ColumnName { get; }
-        public bool IsNullable { get; }
 
-        public ColumnAttribute(string columnName, bool isNullable = true)
+        public ColumnAttribute(string columnName)
         {
             ColumnName = columnName;
-            IsNullable = isNullable;
         }
     }
 }

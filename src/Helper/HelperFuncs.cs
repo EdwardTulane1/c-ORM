@@ -68,15 +68,13 @@ namespace MyORM.Helper
 
         public static object LoadEntityByKey(Type entityType, string key)
         {
-            var xmlPath = HelperFuncs.GetTablePath(
-                Path.Combine(Directory.GetCurrentDirectory(), "XmlStorage"),
-                entityType.Name);
-            if (!File.Exists(xmlPath)) return null;
+            var connection = XmlConnection.Instance;
+            var doc = connection.GetDocument(entityType.Name, false);
+            if (doc == null) return null;
 
-            var doc = XDocument.Load(xmlPath);
-            var keyProp = HelperFuncs.GetKeyProperty(entityType);
+            var keyProp = GetKeyProperty(entityType);
 
-            foreach (var element in doc.Root.Elements("Entity"))
+            foreach (var element in doc!.Root!.Elements("Entity"))
             {
                 if (element.Element(keyProp.Name)?.Value == key)
                 {

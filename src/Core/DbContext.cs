@@ -28,7 +28,7 @@ namespace MyORM.Core
         protected DbContext(string xmlBasePath)
         {
             _xmlBasePath = xmlBasePath;
-            _connection = new XmlConnection(xmlBasePath);
+            _connection = XmlConnection.Instance;
             _connection.Open();
             _storageProvider = new XmlStorageProvider(_connection);
             InitializeDbSets();
@@ -193,7 +193,7 @@ namespace MyORM.Core
 
         internal XmlConnection GetConnection()
         {
-            return _connection;
+            return XmlConnection.Instance;
         }
     }
 }

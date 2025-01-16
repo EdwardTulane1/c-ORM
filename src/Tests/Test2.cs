@@ -6,11 +6,11 @@ namespace MyORM.Tests
     [Table("Manufacturers")]
     public class Manufacturer : Entity
     {
-        [Key(isAutoIncrement: false)]
-        [Column("Id", false)]
+        [Key]
+        [Column("Id")]
         public int Id { get; set; }
 
-        [Column("Name", false)]
+        [Column("Name")]
         public string Name { get; set; }
 
         [Relationship(RelationType.OneToMany, typeof(Car), onDelete: DeleteBehavior.Cascade)]
@@ -20,14 +20,14 @@ namespace MyORM.Tests
     [Table("Cars")]
     public class Car : Entity
     {
-        [Key(isAutoIncrement: false)]
-        [Column("Id", false)]
+        [Key]
+        [Column("Id")]
         public int Id { get; set; }
 
-        [Column("Name", false)]
+        [Column("Name")]
         public string Name { get; set; }
 
-        [Column("Price", false)]
+        [Column("Price")]
         public int Price { get; set; }
 
         [Relationship(RelationType.ManyToOne, typeof(Manufacturer), onDelete:DeleteBehavior.None)]

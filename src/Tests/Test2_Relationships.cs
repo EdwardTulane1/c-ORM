@@ -49,16 +49,20 @@ namespace MyORM.Tests
             Console.WriteLine("\nTesting Cascade Delete...");
 
             var manufacturer = new Manufacturer { Id = 310, Name = "Cascade Test" };
+            var manufacturer2 = new Manufacturer { Id = 311, Name = "Cascade Test 2" };
             var car = new Car { Id = 410, Name = "Cascade Car", Price = 50000, Manufacturer = manufacturer };
-            
             _context.Manufacturers.Add(manufacturer);
+            _context.Manufacturers.Add(manufacturer2);
             _context.Cars.Add(car);
             _context.SaveChanges();
+
+            // car.Manufacturer = manufacturer2;
+            // _context.SaveChanges();
 
             var carQuery = _context.Query<Car>();
 
             var deletedCar1 = carQuery.Where("Id", "=", "410").Execute().FirstOrDefault();
-            Console.WriteLine($"Deleted car 1: {deletedCar1?.Name}");
+            Console.WriteLine($"Deleted car 1: {deletedCar1?.Name}, {deletedCar1?.Manufacturer?.Name}");
 
             _context.Manufacturers.Remove(manufacturer);
             _context.SaveChanges();

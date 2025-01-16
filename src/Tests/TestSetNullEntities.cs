@@ -7,11 +7,11 @@ namespace MyORM.Tests
     [Table("Authors")]
     public class Author : Entity
     {
-        [Key(isAutoIncrement: false)]
-        [Column("Id", false)]
+        [Key]
+        [Column("Id")]
         public int Id { get; set; }
 
-        [Column("Name", false)]
+        [Column("Name")]
         public string Name { get; set; }
 
         [Relationship(RelationType.OneToMany, typeof(Book), onDelete: DeleteBehavior.SetNull)]
@@ -21,11 +21,11 @@ namespace MyORM.Tests
     [Table("Books")]
     public class Book : Entity
     {
-        [Key(isAutoIncrement: false)]
-        [Column("Id", false)]
+        [Key]
+        [Column("Id")]
         public int Id { get; set; }
 
-        [Column("Title", false)]
+        [Column("Title")]
         public string Title { get; set; }
 
         [Relationship(RelationType.ManyToOne, typeof(Author), onDelete: DeleteBehavior.None)]

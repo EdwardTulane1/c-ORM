@@ -9,25 +9,25 @@ namespace MyORM.Tests
     [Table("ValidatedEntities")]
     public class ValidatedEntity : Entity
     {
-        [Key(isAutoIncrement: false)]
-        [Column("Id", false)]
+        [Key]
+        [Column("Id")]
         public int Id { get; set; }
 
         [Required]
         [StringLength(50, 2)]
-        [Column("Name", false)]
+        [Column("Name")]
         public string Name { get; set; }
 
         [Email]
-        [Column("Email", false)]
+        [Column("Email")]
         public string Email { get; set; }
 
         [Range(0, 100)]
-        [Column("Score", false)]
+        [Column("Score")]
         public int Score { get; set; }
 
         [RegularExpression(@"^[A-Z]{2}\d{3}$")]
-        [Column("Code", false)]
+        [Column("Code")]
         public string Code { get; set; }
     }
 
