@@ -63,6 +63,8 @@ namespace MyORM.Tests
             TestRegexValidation();
             TestMultipleValidations();
 
+            _context.Dispose();
+
             Console.WriteLine("Validation Tests completed.");
         }
 

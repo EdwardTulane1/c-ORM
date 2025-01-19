@@ -17,7 +17,7 @@ namespace MyORM.Core
 
         private XmlConnection()
         {
-            _basePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data");
+            _basePath = Path.Combine(Directory.GetCurrentDirectory(), "Data");
             _documentCache = new Dictionary<string, XDocument>();
             _isOpen = false;
             

@@ -8,7 +8,6 @@ using System.Data;
 using System.Reflection;
 using MyORM.Attributes;
 using MyORM.Attributes.Validation;
-using MyORM.Helper;
 
 namespace MyORM.Core
 {
@@ -85,19 +84,14 @@ namespace MyORM.Core
          */
         public void SaveChanges()
         {
-            // Clear previous tracking
-
             var graph = BuildDependencyGraph();
             var sortedEntityTypes = graph.GetSortedEntities();
 
-            // First handle deletions in reverse order ( the entites you depend on will be updated last, you 1st update the ones that depend on you)
             foreach (var entityType in sortedEntityTypes.AsEnumerable().Reverse())
             {
-                // Console.WriteLine($"dependency: {entityType.Name}");
                 var dbSetProperty = GetType().GetProperties()
                    .First(p => p.PropertyType == typeof(DbSet<>).MakeGenericType(entityType));
                 var dbSet = dbSetProperty.GetValue(this);
-                //console.WriteLine($"2. DbSet property: {dbSetProperty.Name}");
 
                 var entities = ((IEnumerable<Entity>)dbSet
                     .GetType()
@@ -121,7 +115,6 @@ namespace MyORM.Core
                         entity.TakeSnapshot();
                     }
                 }
-                // TODO - delete orphans
                 _storageProvider.DeleteOrphans();
             }
         }
@@ -143,29 +136,25 @@ namespace MyORM.Core
 
                 foreach (var prop in relationshipProps)
                 {
-                    // BIG TODO -  START!
                     var relAttr = prop.GetCustomAttribute<RelationshipAttribute>();
                     if (relAttr == null) continue;
                     switch (relAttr.Type)
                     {
                         case RelationType.OneToMany:
-                            // They (many) depend on me
                             graph.AddDependency(relAttr.RelatedType, entityType);
                             break;
-                        case RelationType.OneToOne:// if i get deleted they too - they depend on me
+                        case RelationType.OneToOne:
                             if(relAttr.OnDelete == DeleteBehavior.Cascade || relAttr.OnDelete == DeleteBehavior.SetNull){ // One of the sides must be depend on another while the pther one doesnt
                                 graph.AddDependency(relAttr.RelatedType, entityType);
                             }
-                            break; // will alwaysw cause circular dependency. will have hirarchy in here.
-                        case RelationType.ManyToOne: // i depend on them
-                            graph.AddDependency(entityType, relAttr.RelatedType);
-                            // Add dependency from related entity to current entity
                             break;
-                        case RelationType.ManyToMany: // many to many - they depend on me
-                            if(relAttr.OnDelete == DeleteBehavior.Cascade){ // many to many dioesnt habve setnull. its a relation
+                        case RelationType.ManyToOne: 
+                            graph.AddDependency(entityType, relAttr.RelatedType);
+                            break;
+                        case RelationType.ManyToMany:
+                            if(relAttr.OnDelete == DeleteBehavior.Cascade){ 
                                 graph.AddDependency(relAttr.RelatedType, entityType);
                             }
-                            // For many-to-many, we don't add direct dependencies
                             break;
                     }
                 }

@@ -17,7 +17,7 @@ namespace MyORM.Tests
             Console.WriteLine("Running SetNull Behavior Tests...");
             
             TestSetNullOnDelete();
-            
+            _context.Dispose();
             Console.WriteLine("SetNull Behavior Tests completed.");
         }
 

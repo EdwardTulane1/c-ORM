@@ -21,7 +21,8 @@ namespace MyORM.Tests
             
             TestBasicFiltering();
             TestMultipleConditions();
-       
+            
+            _context.Dispose();
             
             Console.WriteLine("Query Tests completed.");
         }

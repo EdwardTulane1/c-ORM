@@ -22,6 +22,7 @@ namespace MyORM.Tests
             TestCascadeDelete();
             TestRelationshipLoading();
             
+            _context.Dispose();
             Console.WriteLine("Relationship Tests completed.");
         }
 

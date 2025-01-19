@@ -21,10 +21,11 @@ namespace MyORM.Tests
             TestManyToManyQuery();
             TestManyToManyDelete();
           
-            // TestOneToOneCreate();
-            // TestOneToOneQuery();
-            // TestOneToOneDelete();
-            
+            TestOneToOneCreate();
+            TestOneToOneQuery();
+            TestOneToOneDelete();
+
+            _context.Dispose();
             Console.WriteLine("Advanced Relationship Tests completed.");
         }
 

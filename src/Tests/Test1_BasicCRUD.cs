@@ -27,6 +27,7 @@ namespace MyORM.Tests
             TestUpdate();
             TestDelete();
             
+            _context.Dispose();
             Console.WriteLine("Basic CRUD Tests completed.");
         }
 
