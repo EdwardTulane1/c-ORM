@@ -39,17 +39,12 @@ namespace MyORM.Tests
 
     public class Test1 : DbContext
     {
-        public static readonly string XmlStoragePath = Path.Combine(
-            Directory.GetCurrentDirectory(),
-            "XmlStorage"
-        );
 
         public DbSet<Car> Cars { get; set; }
         public DbSet<Manufacturer> Manufacturers { get; set; }
 
-        public Test1() : base(XmlStoragePath)
+        public Test1() : base()
         {
-            Console.WriteLine($"XML files will be stored in: {XmlStoragePath}");
         }
     }
 

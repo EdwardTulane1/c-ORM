@@ -13,7 +13,6 @@ namespace MyORM.Core
 {
     public abstract class DbContext : IDisposable
     {
-        private readonly string _xmlBasePath;
         private readonly XmlStorageProvider _storageProvider;
         private readonly XmlConnection _connection;
         protected Dictionary<Type, string> TableMappings { get; } = new Dictionary<Type, string>();
@@ -24,9 +23,8 @@ namespace MyORM.Core
          * Sets up the storage provider and initializes all DbSet properties
          * @param xmlBasePath: Base path where XML files will be stored
          */
-        protected DbContext(string xmlBasePath)
+        protected DbContext()
         {
-            _xmlBasePath = xmlBasePath;
             _connection = XmlConnection.Instance;
             _connection.Open();
             _storageProvider = new XmlStorageProvider(_connection);
