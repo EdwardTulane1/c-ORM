@@ -30,14 +30,10 @@ namespace MyORM.Helper
         public static string getFileNameAlphaBetic(string type1, string type2)
         {
             var orderedTypes = new[] { type1, type2 }.OrderBy(t => t).ToArray();
-            return $"{orderedTypes[0]}_{orderedTypes[1]}.xml";
+            return $"{orderedTypes[0]}_{orderedTypes[1]}";
         }
 
 
-        public static string GetTablePath(string basePath, string tableName)
-        {
-            return Path.Combine(basePath, $"{tableName}.xml");
-        }
 
         public static T XmlToEntity<T>(XElement element) where T : Entity
         {

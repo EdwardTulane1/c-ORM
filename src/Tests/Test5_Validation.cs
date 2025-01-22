@@ -33,14 +33,9 @@ namespace MyORM.Tests
 
     public class ValidationContext : DbContext
     {
-        public static readonly string XmlStoragePath = Path.Combine(
-            Directory.GetCurrentDirectory(),
-            "XmlStorage"
-        );
-
         public DbSet<ValidatedEntity> ValidatedEntities { get; set; }
 
-        public ValidationContext() : base(XmlStoragePath) { }
+        public ValidationContext() : base() { }
     }
 
     public class Test5_Validation

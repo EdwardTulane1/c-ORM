@@ -1,8 +1,6 @@
 using MyORM.Attributes;
 using MyORM.Core;
 
-using System;
-using System.IO;
 
 namespace MyORM.Tests
 {
@@ -53,18 +51,13 @@ namespace MyORM.Tests
 
     public class TestContext : DbContext
     {
-        public static readonly string XmlStoragePath = Path.Combine(
-            Directory.GetCurrentDirectory(),
-            "XmlStorage"
-        );
-
+      
         public DbSet<Student> Students { get; set; }
         public DbSet<Course> Courses { get; set; }
         public DbSet<StudentProfile> StudentProfiles { get; set; }
 
-        public TestContext() : base(XmlStoragePath)
+        public TestContext() : base()
         {
-            Console.WriteLine($"XML files will be stored in: {XmlStoragePath}");
         }
     }
 } 

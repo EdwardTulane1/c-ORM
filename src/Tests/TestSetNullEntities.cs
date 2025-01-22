@@ -34,14 +34,10 @@ namespace MyORM.Tests
 
     public class SetNullContext : DbContext
     {
-        public static readonly string XmlStoragePath = Path.Combine(
-            Directory.GetCurrentDirectory(),
-            "XmlStorage"
-        );
 
         public DbSet<Author> Authors { get; set; }
         public DbSet<Book> Books { get; set; }
 
-        public SetNullContext() : base(XmlStoragePath) { }
+        public SetNullContext() : base() { }
     }
 } 
